@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CEC90A93-1A1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HideAnyWindowManager", "src\HideAnyWindowManager\HideAnyWindowManager.csproj", "{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{ADBA0442-080F-4B68-BF2F-6DADA5E521F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HideAnyWindowManager.Tests", "test\HideAnyWindowManager.Tests\HideAnyWindowManager.Tests.csproj", "{B453B468-FCD3-4958-9BD5-BDD69ADB6106}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +24,13 @@ Global
 		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Debug|Any CPU.Build.0 = Debug|x64
 		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Release|Any CPU.ActiveCfg = Release|x64
 		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Release|Any CPU.Build.0 = Release|x64
+		{B453B468-FCD3-4958-9BD5-BDD69ADB6106}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B453B468-FCD3-4958-9BD5-BDD69ADB6106}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B453B468-FCD3-4958-9BD5-BDD69ADB6106}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B453B468-FCD3-4958-9BD5-BDD69ADB6106}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8} = {CEC90A93-1A1D-4F5C-A75D-ACA3AEAF33D8}
+		{B453B468-FCD3-4958-9BD5-BDD69ADB6106} = {ADBA0442-080F-4B68-BF2F-6DADA5E521F9}
 	EndGlobalSection
 EndGlobal

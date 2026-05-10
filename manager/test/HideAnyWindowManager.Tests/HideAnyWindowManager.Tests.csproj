@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!--
+    The manager project targets net8.0-windows10.0.26100.0 with UseWinUI=true,
+    which drags the entire WinAppSDK into the test host (and crashes it on
+    bootstrap). ConfigStore + Models have no WinUI dependency, so we link the
+    source files directly into this plain net8.0 test assembly instead of
+    using a ProjectReference.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\src\HideAnyWindowManager\Models\*.cs">
+      <Link>Models\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\..\src\HideAnyWindowManager\Services\*.cs">
+      <Link>Services\%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>
