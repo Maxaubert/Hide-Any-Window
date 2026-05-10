@@ -11,12 +11,32 @@
 ; Stack of hidden windows. Each entry: { hwnd: <UInt>, exStyle: <UInt>, title: <String> }
 HiddenStack := []
 
+; Win32 GetWindowLong / SetWindowLong index for extended style.
+GWL_EXSTYLE := -20
+
+; Extended-style bits relevant to taskbar/Alt-Tab presence.
+WS_EX_APPWINDOW  := 0x00040000  ; Force a top-level window onto the taskbar.
+WS_EX_TOOLWINDOW := 0x00000080  ; Tool window — does not appear in taskbar or Alt-Tab.
+
 ; Bindings — implementations added in later tasks.
 #h::HideActiveWindow()
 #+h::RestoreLastWindow()
 
 HideActiveWindow() {
-    ; Implemented in Task 2.
+    global GWL_EXSTYLE, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW
+
+    hwnd := WinExist("A")
+    if (!hwnd)
+        return
+
+    title := WinGetTitle("ahk_id " hwnd)
+    exStyle := DllCall("GetWindowLongPtr", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr")
+
+    ; Clear WS_EX_APPWINDOW, set WS_EX_TOOLWINDOW so the window leaves the taskbar/Alt-Tab.
+    newExStyle := (exStyle & ~WS_EX_APPWINDOW) | WS_EX_TOOLWINDOW
+    DllCall("SetWindowLongPtr", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr", newExStyle)
+
+    WinHide("ahk_id " hwnd)
 }
 
 RestoreLastWindow() {
