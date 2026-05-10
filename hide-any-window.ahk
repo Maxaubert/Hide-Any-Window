@@ -1,6 +1,11 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
+; Required so WinExist/WinActivate can find windows AFTER we have hidden them
+; with WinHide. Without this, RestoreLastWindow's WinExist check returns 0 for
+; every hidden entry and the restore loop silently drains the stack.
+DetectHiddenWindows true
+
 ; ---------------------------------------------------------------------------
 ; Hide Any Window — Phase A
 ; Hotkeys:
