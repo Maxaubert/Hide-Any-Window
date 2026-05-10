@@ -63,14 +63,17 @@ HideActiveWindow() {
 RestoreLastWindow() {
     global GWL_EXSTYLE, HiddenStack
 
-    if (HiddenStack.Length = 0)
+    while (HiddenStack.Length > 0) {
+        entry := HiddenStack.Pop()
+
+        ; Skip dead HWNDs (window was destroyed while hidden).
+        if (!WinExist("ahk_id " entry.hwnd))
+            continue
+
+        DllCall("SetWindowLongPtr", "Ptr", entry.hwnd, "Int", GWL_EXSTYLE, "Ptr", entry.exStyle)
+        WinShow("ahk_id " entry.hwnd)
+        WinActivate("ahk_id " entry.hwnd)
         return
-
-    entry := HiddenStack.Pop()
-
-    ; Restore the original extended style.
-    DllCall("SetWindowLongPtr", "Ptr", entry.hwnd, "Int", GWL_EXSTYLE, "Ptr", entry.exStyle)
-
-    WinShow("ahk_id " entry.hwnd)
-    WinActivate("ahk_id " entry.hwnd)
+    }
+    ; Stack drained without finding a live window — silently do nothing.
 }
