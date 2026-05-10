@@ -42,7 +42,10 @@ public sealed partial class MainWindow : Window
         var cfg = await App.ConfigStore.LoadAsync();
         bool effective = mutex && cfg.ServiceState == "running";
 
+        // Keep VM in sync with disk so SaveDebounced preserves external changes.
+        ViewModel.ServiceState = cfg.ServiceState;
         ViewModel.IsServiceRunning = effective;
+
         StatusDot.Fill = new SolidColorBrush(effective
             ? Color.FromArgb(0xFF, 0x2E, 0x9C, 0x4F)
             : Color.FromArgb(0xFF, 0x88, 0x88, 0x88));
@@ -106,9 +109,11 @@ public sealed partial class MainWindow : Window
 
         if (!mutex)
         {
-            // Process not running -> ensure config says "running" then launch.
+            // Process not running -> ensure state is "running" then launch.
             cfg.ServiceState = "running";
+            ViewModel.ServiceState = "running";
             await App.ConfigStore.SaveImmediateAsync(cfg);
+            ManagerLog.Write("ServiceButton: launching (mutex absent, set state=running)");
             if (!App.ServiceController.TryStartService())
             {
                 var script = HideAnyWindowManager.Services.ServiceController.DefaultScriptPath();
@@ -127,23 +132,26 @@ public sealed partial class MainWindow : Window
         {
             // Process running, currently active -> pause.
             cfg.ServiceState = "stopped";
+            ViewModel.ServiceState = "stopped";
             await App.ConfigStore.SaveImmediateAsync(cfg);
+            ManagerLog.Write("ServiceButton: pausing (mutex held, state was running -> stopped)");
         }
         else
         {
             // Process running, paused -> resume.
             cfg.ServiceState = "running";
+            ViewModel.ServiceState = "running";
             await App.ConfigStore.SaveImmediateAsync(cfg);
+            ManagerLog.Write("ServiceButton: resuming (mutex held, state was stopped -> running)");
         }
         RefreshStatus();
     }
 
     private void SaveDebounced()
     {
-        var state = ViewModel.IsServiceRunning ? "running" : "stopped";
-        var cfg = ViewModel.ToConfig(state);
+        var cfg = ViewModel.ToConfig();
         var ruleSummary = string.Join(", ", cfg.Rules.Select(r => $"{r.Id}={(r.Enabled ? "on" : "off")}"));
-        ManagerLog.Write($"SaveDebounced state={state} rules=[{ruleSummary}]");
+        ManagerLog.Write($"SaveDebounced state={cfg.ServiceState} rules=[{ruleSummary}]");
         App.ConfigStore.ScheduleSave(cfg);
     }
 }

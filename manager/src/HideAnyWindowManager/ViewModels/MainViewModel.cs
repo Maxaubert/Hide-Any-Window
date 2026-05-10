@@ -27,15 +27,18 @@ public sealed class MainViewModel : ObservableObject
     public string StatusText => IsServiceRunning ? "Service running" : "Service stopped";
     public string ServiceButtonText => IsServiceRunning ? "Stop service" : "Start service";
 
+    public string ServiceState { get; set; } = "running";
+
     public void LoadFrom(Config cfg)
     {
+        ServiceState = cfg.ServiceState;
         Rules.Clear();
         foreach (var r in cfg.Rules) Rules.Add(new RuleViewModel(r));
     }
 
-    public Config ToConfig(string serviceState)
+    public Config ToConfig()
     {
-        var cfg = new Config { ServiceState = serviceState };
+        var cfg = new Config { ServiceState = ServiceState };
         foreach (var r in Rules) cfg.Rules.Add(r.ToModel());
         return cfg;
     }
