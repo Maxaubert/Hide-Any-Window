@@ -55,15 +55,18 @@ public sealed class ServiceController
 
     public static string DefaultScriptPath()
     {
-        // Resolve relative to the manager's executable: ../../service/main.ahk
-        // (In dev the layout is repo/manager/src/HideAnyWindowManager/bin/.../HideAnyWindowManager.exe
-        //  with the service at repo/service/main.ahk. The user can override via the optional
-        //  parameter to TryStartService when this default is wrong.)
-        var exeDir = AppContext.BaseDirectory;
-        var probe = Path.GetFullPath(Path.Combine(exeDir, @"..\..\..\..\..\..\service\main.ahk"));
-        if (File.Exists(probe))
-            return probe;
-        // Fallback to a sibling layout (manager and service folders next to each other in deployed build).
-        return Path.GetFullPath(Path.Combine(exeDir, @"..\service\main.ahk"));
+        // Walk up from BaseDirectory looking for a "service\main.ahk" sibling.
+        // Works for any build config (Debug/Release/publish) and for deployed
+        // layouts where service/ sits next to the manager binary.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null)
+        {
+            var probe = Path.Combine(dir.FullName, "service", "main.ahk");
+            if (File.Exists(probe))
+                return probe;
+            dir = dir.Parent;
+        }
+        // Fallback: return the closest-best guess so error message is informative.
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\service\main.ahk"));
     }
 }

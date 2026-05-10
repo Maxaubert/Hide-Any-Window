@@ -109,12 +109,12 @@ public sealed partial class MainWindow : Window
             await App.ConfigStore.SaveImmediateAsync(cfg);
             if (!App.ServiceController.TryStartService())
             {
+                var script = HideAnyWindowManager.Services.ServiceController.DefaultScriptPath();
+                var ahkUia = HideAnyWindowManager.Services.ServiceController.DefaultAhkUiaPath();
                 var dlg = new ContentDialog
                 {
                     Title = "Couldn't start service",
-                    Content = "AutoHotkey64_UIA.exe or service\\main.ahk not found in expected locations. " +
-                              "Verify AHK v2 is installed at C:\\Program Files\\AutoHotkey\\v2 and that the " +
-                              "manager exe sits next to the service folder.",
+                    Content = $"One of these wasn't found:\n\n  AHK UIA exe:  {ahkUia}\n  Service script:  {script}\n\nVerify both paths exist.",
                     CloseButtonText = "OK",
                     XamlRoot = ((FrameworkElement)Content).XamlRoot,
                 };
