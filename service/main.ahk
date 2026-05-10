@@ -110,12 +110,13 @@ StartupScan(cfg) {
         if (rule = "")
             continue
         title := WinGetTitle("ahk_id " . hwnd)
+        cls := WinGetClass("ahk_id " . hwnd)
         result := TryHideWindow(hwnd)
         if (result["ok"]) {
             RegistryAdd(hwnd, result["exStyle"], rule["id"], title)
-            ServiceLog("INFO", "hid hwnd=" . hwnd . " ruleId=" . rule["id"] . " title=" . title)
+            ServiceLog("INFO", "hid hwnd=" . hwnd . " class=" . cls . " ruleId=" . rule["id"] . " title=" . title)
         } else {
-            ServiceLog("WARN", "hide failed hwnd=" . hwnd . " ruleId=" . rule["id"] . " reason=" . result["reason"])
+            ServiceLog("WARN", "hide failed hwnd=" . hwnd . " class=" . cls . " ruleId=" . rule["id"] . " reason=" . result["reason"])
         }
     }
 }
@@ -216,12 +217,13 @@ WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
     }
 
     title := WinGetTitle("ahk_id " . hwnd)
+    cls := WinGetClass("ahk_id " . hwnd)
     result := TryHideWindow(hwnd)
     if (result["ok"]) {
         RegistryAdd(hwnd, result["exStyle"], rule["id"], title)
-        ServiceLog("INFO", "hooked-hide hwnd=" . hwnd . " ruleId=" . rule["id"] . " title=" . title)
+        ServiceLog("INFO", "hooked-hide hwnd=" . hwnd . " class=" . cls . " ruleId=" . rule["id"] . " title=" . title)
     } else {
-        ServiceLog("WARN", "hooked-hide failed hwnd=" . hwnd . " ruleId=" . rule["id"] . " reason=" . result["reason"])
+        ServiceLog("WARN", "hooked-hide failed hwnd=" . hwnd . " class=" . cls . " ruleId=" . rule["id"] . " reason=" . result["reason"])
     }
 }
 
