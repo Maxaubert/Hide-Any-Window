@@ -7,3 +7,6 @@ hide-failures.log
 
 # Superpowers brainstorming session content (mockups, server state)
 .superpowers/
+
+# Ad-hoc service test outputs
+service/test/output/
