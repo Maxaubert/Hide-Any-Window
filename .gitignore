@@ -4,3 +4,6 @@ hide-failures.log
 # AHK build artifacts (only relevant in later phases that compile to .exe)
 *.exe
 *.bin
+
+# Superpowers brainstorming session content (mockups, server state)
+.superpowers/
