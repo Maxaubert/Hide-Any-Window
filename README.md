@@ -19,9 +19,12 @@ Two cooperating pieces, sharing a single JSON config file:
   `docs/superpowers/specs/2026-05-10-hide-any-window-phase-b-design.md` and
   `docs/superpowers/plans/2026-05-10-hide-any-window-phase-b-service.md`.
 
-- **Manager** (planned) — WinUI 3 / .NET app that lets you add or remove
+- **Manager** (`manager/`) — WinUI 3 / .NET 8 app that lets you add or remove
   rules from a process picker, toggle each rule on/off, and stop or start
-  the service. Plan B-2 (separate spec/plan to be written).
+  the service. Runs un-elevated; reads/writes the same `config.json` and
+  detects service liveness via the `HideAnyWindow_Service_Running` named
+  mutex. **Implemented.** See
+  `docs/superpowers/plans/2026-05-10-hide-any-window-phase-b-manager.md`.
 
 ## Requirements
 
@@ -50,10 +53,39 @@ For the eventual standalone-binary distribution, the service will be compiled
 to a UIAccess-manifested `.exe` (`Ahk2Exe` + manifest + signing) so users
 don't need an AHK install. See the design doc.
 
+## Running the manager
+
+Build (one-time):
+
+```powershell
+dotnet build manager\HideAnyWindowManager.sln
+```
+
+Then launch either via `dotnet run`:
+
+```powershell
+dotnet run --project manager\src\HideAnyWindowManager
+```
+
+…or directly from the build output:
+
+```
+manager\src\HideAnyWindowManager\bin\x64\Debug\net8.0-windows10.0.26100.0\HideAnyWindowManager.exe
+```
+
+The manager runs un-elevated. It reads/writes the shared `config.json` and
+detects whether the service is alive via the `HideAnyWindow_Service_Running`
+named mutex. When you click "Start service" from the footer, the manager
+launches the AHK service via `AutoHotkey64_UIA.exe` — no UAC prompt.
+
 ## Configuration
 
-Until the manager UI ships, edit `%APPDATA%\HideAnyWindow\config.json`
-directly. Schema:
+Configuration lives at `%APPDATA%\HideAnyWindow\config.json`. The **manager
+app** is the recommended way to edit it — see "Running the manager" above.
+Direct JSON editing still works for headless setups (the AHK service watches
+the file either way).
+
+Schema:
 
 ```json
 {
@@ -103,7 +135,30 @@ service/
   hider.ahk        TryHideWindow / RestoreWindowFromEntry + ITaskbarList
   lib/JSON.ahk     vendored thqby JSON library (MIT)
   test/            ad-hoc test scripts for pure-logic modules
+manager/
+  HideAnyWindowManager.sln
+  src/HideAnyWindowManager/   WinUI 3 / .NET 8 manager app
+  test/                       xUnit tests (ConfigStore, ServiceController)
 docs/superpowers/
   specs/           design docs
   plans/           implementation plans
 ```
+
+## Validation results — Phase B manager
+
+Tested on Windows 11 Pro, .NET 8 SDK, Windows App SDK 1.5+ (or 2.0).
+
+| # | Scenario | Result |
+|---|---|---|
+| 1 | Manager opens, shows existing rules from config.json | _pending_ |
+| 2 | Add Magnifier via picker → service hides | _pending_ |
+| 3 | Toggle off → service restores | _pending_ |
+| 4 | Toggle on → service re-hides | _pending_ |
+| 5 | Remove rule → service restores | _pending_ |
+| 6 | Stop service via footer | _pending_ |
+| 7 | Start service via footer (auto-launch when down) | _pending_ |
+| 8 | Manager close doesn't affect service | _pending_ |
+| 9 | Reopen manager reflects current state | _pending_ |
+| 10 | "already monitored" annotation in picker | _pending_ |
+
+(Replace `_pending_` with ✅ / ❌ as you run each test.)
