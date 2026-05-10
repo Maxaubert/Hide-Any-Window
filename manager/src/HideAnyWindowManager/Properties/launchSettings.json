@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "HideAnyWindowManager (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "HideAnyWindowManager (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

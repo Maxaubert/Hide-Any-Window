@@ -10,3 +10,11 @@ hide-failures.log
 
 # Ad-hoc service test outputs
 service/test/output/
+
+# .NET / WinUI 3 build outputs
+manager/**/bin/
+manager/**/obj/
+manager/**/AppPackages/
+manager/**/BundleArtifacts/
+manager/**/Generated Files/
+manager/.vs/
