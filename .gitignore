@@ -1,0 +1,6 @@
+# Runtime log produced when admin privilege is insufficient to hide a window
+hide-failures.log
+
+# AHK build artifacts (only relevant in later phases that compile to .exe)
+*.exe
+*.bin
