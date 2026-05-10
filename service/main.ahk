@@ -184,10 +184,14 @@ RecoverOrphanHiddenWindows() {
 
 OnServiceExit(*) {
     ServiceLog("INFO", "service shutting down — restoring all hidden windows")
+    ; Unregister the hook FIRST. Otherwise, each WinShow below fires
+    ; EVENT_OBJECT_SHOW, the callback runs, sees the rule still enabled,
+    ; and re-hides the window we just restored. Net effect: nothing
+    ; restored. Confirmed in the prior session's log.
+    UnregisterWindowHook()
     drained := RegistryDrain()
     for entry in drained
         RestoreWindowFromEntry(entry)
-    UnregisterWindowHook()
     ReleaseServiceMutex()
 }
 
