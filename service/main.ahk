@@ -2,6 +2,13 @@
 #SingleInstance Force
 DetectHiddenWindows true
 
+; AHK v2's static analyzer emits "this local variable appears to never be
+; assigned a value" warnings for legitimate cross-file function and class
+; references (e.g. calling ServiceLog from config.ahk, or JSON.stringify
+; from registry.ahk). These are false positives — the symbols resolve fine
+; at runtime. Real problems still surface as errors regardless of #Warn.
+#Warn All, Off
+
 #Include lib\JSON.ahk
 #Include log.ahk
 #Include config.ahk
