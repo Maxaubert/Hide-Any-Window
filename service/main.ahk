@@ -8,12 +8,24 @@ DetectHiddenWindows true
 #Include registry.ahk
 #Include hider.ahk
 
-; --- Bootstrap (Task 6: one-shot only) ---
-ServiceLog("INFO", "service starting (Task 6 build — one-shot scan)")
-cfg := LoadConfig()
-StartupScan(cfg)
-ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden")
-; Script stays alive because of the AHK message loop.
+; --- Bootstrap (Task 7: with live hook, no watcher yet) ---
+ServiceLog("INFO", "service starting (Task 7 build — startup scan + live hook)")
+CurrentConfig := LoadConfig()
+StartupScan(CurrentConfig)
+RegisterWindowHook()
+ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden, hook active")
+
+; ---------------------------------------------------------------------------
+; Win32 event constants and globals
+; ---------------------------------------------------------------------------
+
+EVENT_OBJECT_SHOW := 0x8002
+WINEVENT_OUTOFCONTEXT := 0x0000
+OBJID_WINDOW := 0
+
+global hWinEventHook := 0
+global EventCallbackPtr := 0
+global CurrentConfig := ""   ; latest cfg, kept in sync by the config watcher (Task 8)
 
 ; ---------------------------------------------------------------------------
 ; Helpers
@@ -75,5 +87,68 @@ StartupScan(cfg) {
         } else {
             ServiceLog("WARN", "hide failed hwnd=" hwnd " ruleId=" rule["id"] " reason=" result["reason"])
         }
+    }
+}
+
+; ---------------------------------------------------------------------------
+; SetWinEventHook — fires on every new visible window
+; ---------------------------------------------------------------------------
+
+; Signature: void(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime)
+WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
+    global CurrentConfig, OBJID_WINDOW
+
+    if (idObject != OBJID_WINDOW || idChild != 0)
+        return  ; we only care about top-level windows
+    if (hwnd = 0)
+        return
+    if (CurrentConfig = "")
+        return
+
+    rule := FindEnabledRuleForHwnd(CurrentConfig, hwnd)
+    if (rule = "")
+        return
+
+    ; Skip windows we already hid (avoid double-processing).
+    for entry in HiddenEntries {
+        if entry["hwnd"] = hwnd
+            return
+    }
+
+    title := WinGetTitle("ahk_id " hwnd)
+    result := TryHideWindow(hwnd)
+    if (result["ok"]) {
+        RegistryAdd(hwnd, result["exStyle"], rule["id"], title)
+        ServiceLog("INFO", "hooked-hide hwnd=" hwnd " ruleId=" rule["id"] " title=" title)
+    } else {
+        ServiceLog("WARN", "hooked-hide failed hwnd=" hwnd " ruleId=" rule["id"] " reason=" result["reason"])
+    }
+}
+
+RegisterWindowHook() {
+    global hWinEventHook, EventCallbackPtr, EVENT_OBJECT_SHOW, WINEVENT_OUTOFCONTEXT
+    EventCallbackPtr := CallbackCreate(WinEventCallback, "F", 7)
+    hWinEventHook := DllCall("SetWinEventHook"
+        , "UInt", EVENT_OBJECT_SHOW
+        , "UInt", EVENT_OBJECT_SHOW
+        , "Ptr",  0
+        , "Ptr",  EventCallbackPtr
+        , "UInt", 0
+        , "UInt", 0
+        , "UInt", WINEVENT_OUTOFCONTEXT
+        , "Ptr")
+    if (hWinEventHook = 0)
+        ServiceLog("ERROR", "SetWinEventHook returned 0 — live hide will not work")
+}
+
+UnregisterWindowHook() {
+    global hWinEventHook, EventCallbackPtr
+    if (hWinEventHook != 0) {
+        DllCall("UnhookWinEvent", "Ptr", hWinEventHook)
+        hWinEventHook := 0
+    }
+    if (EventCallbackPtr != 0) {
+        CallbackFree(EventCallbackPtr)
+        EventCallbackPtr := 0
     }
 }
