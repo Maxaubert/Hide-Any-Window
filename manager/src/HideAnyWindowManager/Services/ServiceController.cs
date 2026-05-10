@@ -36,18 +36,45 @@ public sealed class ServiceController
         scriptPath ??= DefaultScriptPath();
         ahkUiaPath ??= DefaultAhkUiaPath();
 
-        if (!File.Exists(scriptPath) || !File.Exists(ahkUiaPath))
-            return false;
+        bool scriptOk = File.Exists(scriptPath);
+        bool ahkOk = File.Exists(ahkUiaPath);
+        Log($"TryStartService probed: ahkUia={ahkUiaPath} (exists={ahkOk})  script={scriptPath} (exists={scriptOk})");
 
-        var psi = new ProcessStartInfo
+        if (!scriptOk || !ahkOk)
         {
-            FileName = ahkUiaPath,
-            Arguments = "\"" + scriptPath + "\"",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        Process.Start(psi);
-        return true;
+            Log("TryStartService aborting — one or both paths missing");
+            return false;
+        }
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = ahkUiaPath,
+                Arguments = "\"" + scriptPath + "\"",
+                UseShellExecute = true,   // required for UIAccess auto-elevation of AutoHotkey64_UIA.exe
+            };
+            var proc = Process.Start(psi);
+            Log($"TryStartService Process.Start returned proc={proc?.Id.ToString() ?? "null"}");
+            return proc != null;
+        }
+        catch (Exception ex)
+        {
+            Log($"TryStartService Process.Start threw: {ex.GetType().Name}: {ex.Message}");
+            return false;
+        }
+    }
+
+    private static void Log(string msg)
+    {
+        try
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HideAnyWindow");
+            Directory.CreateDirectory(dir);
+            var line = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " | " + msg + "\r\n";
+            File.AppendAllText(Path.Combine(dir, "manager.log"), line);
+        }
+        catch { /* swallow logging errors */ }
     }
 
     public static string DefaultAhkUiaPath()
