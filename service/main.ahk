@@ -8,12 +8,14 @@ DetectHiddenWindows true
 #Include registry.ahk
 #Include hider.ahk
 
-; --- Bootstrap (Task 7: with live hook, no watcher yet) ---
-ServiceLog("INFO", "service starting (Task 7 build — startup scan + live hook)")
+; --- Bootstrap (Task 8: with file watcher) ---
+ServiceLog("INFO", "service starting (Task 8 build — startup scan + live hook + config watcher)")
 CurrentConfig := LoadConfig()
+LastConfigMTime := FileExist(GetConfigPath()) ? FileGetTime(GetConfigPath(), "M") : ""
 StartupScan(CurrentConfig)
 RegisterWindowHook()
-ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden, hook active")
+SetTimer(CheckConfigForChanges, 1000)
+ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden, hook + watcher active")
 
 ; ---------------------------------------------------------------------------
 ; Win32 event constants and globals
@@ -25,21 +27,19 @@ OBJID_WINDOW := 0
 
 global hWinEventHook := 0
 global EventCallbackPtr := 0
-global CurrentConfig := ""   ; latest cfg, kept in sync by the config watcher (Task 8)
+global CurrentConfig := ""
+global LastConfigMTime := ""
 
 ; ---------------------------------------------------------------------------
 ; Helpers
 ; ---------------------------------------------------------------------------
 
-; Returns lowercase basename of the executable that owns hwnd, e.g. "magnify.exe".
-; Returns "" on failure.
 GetExeBasenameForHwnd(hwnd) {
     pid := 0
     DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &pid)
     if (pid = 0)
         return ""
 
-    ; PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
     hProc := DllCall("OpenProcess", "UInt", 0x1000, "Int", false, "UInt", pid, "Ptr")
     if (hProc = 0)
         return ""
@@ -57,7 +57,6 @@ GetExeBasenameForHwnd(hwnd) {
     return StrLower(basename)
 }
 
-; FindEnabledRuleForHwnd(cfg, hwnd) -> Map (the matching rule) | ""
 FindEnabledRuleForHwnd(cfg, hwnd) {
     exe := GetExeBasenameForHwnd(hwnd)
     if (exe = "")
@@ -70,12 +69,22 @@ FindEnabledRuleForHwnd(cfg, hwnd) {
     return ""
 }
 
-; Iterates every visible top-level window, hides any that match an enabled rule.
+; Idempotent: skips windows already in HiddenEntries.
 StartupScan(cfg) {
-    DetectHiddenWindows false  ; we want only visible windows for the scan
+    DetectHiddenWindows false
     ids := WinGetList()
-    DetectHiddenWindows true   ; restore script-wide setting
+    DetectHiddenWindows true
     for hwnd in ids {
+        ; Skip windows we've already hidden.
+        already := false
+        for entry in HiddenEntries {
+            if entry["hwnd"] = hwnd {
+                already := true
+                break
+            }
+        }
+        if already
+            continue
         rule := FindEnabledRuleForHwnd(cfg, hwnd)
         if (rule = "")
             continue
@@ -91,15 +100,14 @@ StartupScan(cfg) {
 }
 
 ; ---------------------------------------------------------------------------
-; SetWinEventHook — fires on every new visible window
+; SetWinEventHook
 ; ---------------------------------------------------------------------------
 
-; Signature: void(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime)
 WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
     global CurrentConfig, OBJID_WINDOW
 
     if (idObject != OBJID_WINDOW || idChild != 0)
-        return  ; we only care about top-level windows
+        return
     if (hwnd = 0)
         return
     if (CurrentConfig = "")
@@ -109,7 +117,6 @@ WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
     if (rule = "")
         return
 
-    ; Skip windows we already hid (avoid double-processing).
     for entry in HiddenEntries {
         if entry["hwnd"] = hwnd
             return
@@ -151,4 +158,62 @@ UnregisterWindowHook() {
         CallbackFree(EventCallbackPtr)
         EventCallbackPtr := 0
     }
+}
+
+; ---------------------------------------------------------------------------
+; Config watcher (mtime polling at 1 Hz — cost ~microseconds)
+; ---------------------------------------------------------------------------
+
+; Compares old config's enabled-rule set against new and reconciles registry + windows.
+ApplyNewConfig(oldCfg, newCfg) {
+    oldEnabled := Map(), newEnabled := Map()
+    if oldCfg != "" {
+        for rule in oldCfg["rules"]
+            if rule.Has("enabled") && rule["enabled"]
+                oldEnabled[rule["id"]] := true
+    }
+    for rule in newCfg["rules"]
+        if rule.Has("enabled") && rule["enabled"]
+            newEnabled[rule["id"]] := true
+
+    ; Restore windows whose rule was disabled or removed.
+    for ruleId in oldEnabled {
+        if !newEnabled.Has(ruleId) {
+            removed := RegistryRemoveByRuleId(ruleId)
+            for entry in removed {
+                RestoreWindowFromEntry(entry)
+                ServiceLog("INFO", "restored hwnd=" entry["hwnd"] " ruleId=" ruleId " (rule disabled/removed)")
+            }
+        }
+    }
+
+    ; For newly-enabled rules, run a targeted scan to catch already-open windows.
+    for ruleId in newEnabled {
+        if !oldEnabled.Has(ruleId) {
+            StartupScan(newCfg)
+            break  ; one scan covers all rules anyway
+        }
+    }
+}
+
+CheckConfigForChanges() {
+    global CurrentConfig, LastConfigMTime
+    path := GetConfigPath()
+    if !FileExist(path) {
+        if CurrentConfig != "" && CurrentConfig["rules"].Length > 0 {
+            oldCfg := CurrentConfig
+            CurrentConfig := GetDefaultConfig()
+            LastConfigMTime := ""
+            ApplyNewConfig(oldCfg, CurrentConfig)
+        }
+        return
+    }
+    mtime := FileGetTime(path, "M")
+    if (mtime = LastConfigMTime)
+        return
+    LastConfigMTime := mtime
+    oldCfg := CurrentConfig
+    CurrentConfig := LoadConfig()
+    ServiceLog("INFO", "config.json changed — reapplying")
+    ApplyNewConfig(oldCfg, CurrentConfig)
 }
