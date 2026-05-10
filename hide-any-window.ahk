@@ -23,7 +23,7 @@ WS_EX_TOOLWINDOW := 0x00000080  ; Tool window — does not appear in taskbar or 
 #+h::RestoreLastWindow()
 
 HideActiveWindow() {
-    global GWL_EXSTYLE, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW
+    global GWL_EXSTYLE, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW, HiddenStack
 
     hwnd := WinExist("A")
     if (!hwnd)
@@ -37,8 +37,20 @@ HideActiveWindow() {
     DllCall("SetWindowLongPtr", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr", newExStyle)
 
     WinHide("ahk_id " hwnd)
+    HiddenStack.Push({ hwnd: hwnd, exStyle: exStyle, title: title })
 }
 
 RestoreLastWindow() {
-    ; Implemented in Task 3.
+    global GWL_EXSTYLE, HiddenStack
+
+    if (HiddenStack.Length = 0)
+        return
+
+    entry := HiddenStack.Pop()
+
+    ; Restore the original extended style.
+    DllCall("SetWindowLongPtr", "Ptr", entry.hwnd, "Int", GWL_EXSTYLE, "Ptr", entry.exStyle)
+
+    WinShow("ahk_id " entry.hwnd)
+    WinActivate("ahk_id " entry.hwnd)
 }
