@@ -3,32 +3,62 @@
     x:Class="HideAnyWindowManager.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:HideAnyWindowManager"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="HideAnyWindowManager"
-    mc:Ignorable="d">
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
-
-    <Grid>
+    xmlns:vm="using:HideAnyWindowManager.ViewModels"
+    Title="Hide Any Window">
+    <Grid Padding="0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TitleBar x:Name="AppTitleBar" Title="HideAnyWindowManager">
-            <TitleBar.IconSource>
-                <ImageIconSource ImageSource="Assets/AppIcon.ico" />
-            </TitleBar.IconSource>
-        </TitleBar>
+        <!-- Toolbar -->
+        <Grid Padding="20,18,20,10" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Monitored apps" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <Button x:Name="AddButton" Content="+ Add" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
+                <Button x:Name="RemoveButton" Content="Remove" Click="RemoveButton_Click" IsEnabled="False"/>
+            </StackPanel>
+        </Grid>
 
-        <!--
-            The Frame hosts pages for your application content. Add your UI to
-            MainPage.xaml rather than here so you can use Page features such as
-            navigation events and the Loaded lifecycle.
-        -->
-        <Frame x:Name="RootFrame" Grid.Row="1" />
+        <!-- Rule list -->
+        <ListView x:Name="RulesList" Grid.Row="1" Padding="12,4,12,16" SelectionMode="Single"
+                  SelectionChanged="RulesList_SelectionChanged">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:RuleViewModel">
+                    <Grid Padding="6,8" ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="28" Height="28" CornerRadius="6" Background="#4F7CFF">
+                            <TextBlock Text="{x:Bind Initial}" Foreground="White" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
+                        <ToggleSwitch Grid.Column="2" IsOn="{x:Bind Enabled, Mode=TwoWay}"
+                                      OnContent="" OffContent="" Toggled="RuleToggle_Toggled"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Footer (service status + Stop/Start) -->
+        <Grid Grid.Row="2" Padding="20,12,20,14" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="Gray"/>
+                <TextBlock x:Name="StatusLabel" Text="Service stopped" FontWeight="SemiBold"/>
+            </StackPanel>
+            <Button Grid.Column="1" x:Name="ServiceButton" Content="Start service" Click="ServiceButton_Click"/>
+        </Grid>
     </Grid>
 </Window>

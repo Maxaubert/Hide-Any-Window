@@ -1,27 +1,23 @@
+using HideAnyWindowManager.ViewModels;
 using Microsoft.UI.Xaml;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using Microsoft.UI.Xaml.Controls;
 
 namespace HideAnyWindowManager;
 
-/// <summary>
-/// The application window. This hosts a Frame that displays pages. Add your
-/// UI and logic to MainPage.xaml / MainPage.xaml.cs instead of here so you
-/// can use Page features such as navigation events and the Loaded lifecycle.
-/// </summary>
 public sealed partial class MainWindow : Window
 {
+    public MainViewModel ViewModel { get; } = new();
+
     public MainWindow()
     {
         InitializeComponent();
-
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(AppTitleBar);
-
-        AppWindow.SetIcon("Assets/AppIcon.ico");
-
-        // Navigate the root frame to the main page on startup.
-        RootFrame.Navigate(typeof(MainPage));
+        RulesList.ItemsSource = ViewModel.Rules;
     }
+
+    // Wired up properly in Task 7
+    private void AddButton_Click(object sender, RoutedEventArgs e) { }
+    private void RemoveButton_Click(object sender, RoutedEventArgs e) { }
+    private void RulesList_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+    private void RuleToggle_Toggled(object sender, RoutedEventArgs e) { }
+    private void ServiceButton_Click(object sender, RoutedEventArgs e) { }
 }
