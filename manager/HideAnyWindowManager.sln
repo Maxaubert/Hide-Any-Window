@@ -16,10 +16,10 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Debug|Any CPU.Build.0 = Debug|x86
-		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Release|Any CPU.ActiveCfg = Release|x86
-		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Release|Any CPU.Build.0 = Release|x86
+		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Debug|Any CPU.Build.0 = Debug|x64
+		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Release|Any CPU.ActiveCfg = Release|x64
+		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8}.Release|Any CPU.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{811EFCB8-B488-4EF5-AB35-C9CCA99DE5B8} = {CEC90A93-1A1D-4F5C-A75D-ACA3AEAF33D8}
