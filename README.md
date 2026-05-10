@@ -37,3 +37,22 @@ Hidden windows are unreachable while hidden — they're off the taskbar and
 off Alt-Tab. Restoration is LIFO via `Win+Shift+H` only. If the script
 exits while windows are hidden, those windows remain in their hidden state
 until you log out or reopen the script and find them via another means.
+
+## Phase A validation results
+
+Tested on Windows 11 Pro (run `winver` to record version), AutoHotkey v2.x,
+script run as administrator.
+
+| Target | Hide | Restore | Notes |
+|---|---|---|---|
+| Notepad | _pending_ | _pending_ | |
+| Calculator (UWP) | _pending_ | _pending_ | |
+| Task Manager | _pending_ | _pending_ | |
+| Magnifier — Lens | _pending_ | _pending_ | |
+| Magnifier — Full-screen | _pending_ | _pending_ | |
+
+**Verdict:**
+- If both Magnifier rows are ✅ → Phase A is sufficient. Phase B is unnecessary.
+- If either Magnifier row is ❌ → admin is not enough; proceed to Phase B
+  (UIAccess manifest + signed `.exe`). The `hide-failures.log` from this run
+  is the evidence.
