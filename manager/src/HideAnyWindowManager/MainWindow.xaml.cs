@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using HideAnyWindowManager.Models;
 using HideAnyWindowManager.Services;
+using HideAnyWindowManager.Util;
 using HideAnyWindowManager.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -63,7 +64,8 @@ public sealed partial class MainWindow : Window
 
     private void RuleToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        // The two-way binding has already updated the VM; persist.
+        if (sender is ToggleSwitch ts && ts.DataContext is RuleViewModel rvm)
+            ManagerLog.Write($"toggle ruleId={rvm.Id} -> Enabled={rvm.Enabled}");
         SaveDebounced();
     }
 
@@ -138,7 +140,10 @@ public sealed partial class MainWindow : Window
 
     private void SaveDebounced()
     {
-        var cfg = ViewModel.ToConfig(ViewModel.IsServiceRunning ? "running" : "stopped");
+        var state = ViewModel.IsServiceRunning ? "running" : "stopped";
+        var cfg = ViewModel.ToConfig(state);
+        var ruleSummary = string.Join(", ", cfg.Rules.Select(r => $"{r.Id}={(r.Enabled ? "on" : "off")}"));
+        ManagerLog.Write($"SaveDebounced state={state} rules=[{ruleSummary}]");
         App.ConfigStore.ScheduleSave(cfg);
     }
 }
