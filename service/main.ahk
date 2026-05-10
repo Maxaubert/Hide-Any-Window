@@ -8,14 +8,22 @@ DetectHiddenWindows true
 #Include registry.ahk
 #Include hider.ahk
 
-; --- Bootstrap (Task 8: with file watcher) ---
-ServiceLog("INFO", "service starting (Task 8 build — startup scan + live hook + config watcher)")
+; --- Bootstrap (Task 10: full lifecycle) ---
+AcquireServiceMutex()
+ServiceLog("INFO", "service starting (Task 10 build — full lifecycle)")
+RecoverOrphanHiddenWindows()  ; restore anything left hidden by a previous crashed run
 CurrentConfig := LoadConfig()
 LastConfigMTime := FileExist(GetConfigPath()) ? FileGetTime(GetConfigPath(), "M") : ""
-StartupScan(CurrentConfig)
 RegisterWindowHook()
 SetTimer(CheckConfigForChanges, 1000)
-ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden, hook + watcher active")
+if CurrentConfig.Has("serviceState") && CurrentConfig["serviceState"] = "stopped" {
+    Paused := true
+    ServiceLog("INFO", "service idle — paused per config")
+} else {
+    StartupScan(CurrentConfig)
+    ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden")
+}
+OnExit(OnServiceExit)
 
 ; ---------------------------------------------------------------------------
 ; Win32 event constants and globals
@@ -29,6 +37,8 @@ global hWinEventHook := 0
 global EventCallbackPtr := 0
 global CurrentConfig := ""
 global LastConfigMTime := ""
+global hServiceMutex := 0
+global Paused := false
 
 ; ---------------------------------------------------------------------------
 ; Helpers
@@ -69,13 +79,11 @@ FindEnabledRuleForHwnd(cfg, hwnd) {
     return ""
 }
 
-; Idempotent: skips windows already in HiddenEntries.
 StartupScan(cfg) {
     DetectHiddenWindows false
     ids := WinGetList()
     DetectHiddenWindows true
     for hwnd in ids {
-        ; Skip windows we've already hidden.
         already := false
         for entry in HiddenEntries {
             if entry["hwnd"] = hwnd {
@@ -100,12 +108,84 @@ StartupScan(cfg) {
 }
 
 ; ---------------------------------------------------------------------------
+; Named mutex (Task 9)
+; ---------------------------------------------------------------------------
+
+AcquireServiceMutex() {
+    global hServiceMutex
+    ; CreateMutexW(NULL, FALSE, "HideAnyWindow_Service_Running")
+    hServiceMutex := DllCall("CreateMutexW", "Ptr", 0, "Int", false, "Str", "HideAnyWindow_Service_Running", "Ptr")
+    ; ERROR_ALREADY_EXISTS = 183 — another instance already holds it.
+    if (A_LastError = 183) {
+        ServiceLog("ERROR", "another service instance is already running — exiting")
+        DllCall("CloseHandle", "Ptr", hServiceMutex)
+        ExitApp 0
+    }
+    ServiceLog("INFO", "service mutex acquired")
+}
+
+ReleaseServiceMutex() {
+    global hServiceMutex
+    if (hServiceMutex != 0) {
+        DllCall("CloseHandle", "Ptr", hServiceMutex)
+        hServiceMutex := 0
+    }
+}
+
+; ---------------------------------------------------------------------------
+; Pause/resume + crash recovery + shutdown (Task 10)
+; ---------------------------------------------------------------------------
+
+PauseService() {
+    global Paused, CurrentConfig
+    if Paused
+        return
+    Paused := true
+    ServiceLog("INFO", "service pausing — restoring all hidden windows")
+    drained := RegistryDrain()
+    for entry in drained {
+        RestoreWindowFromEntry(entry)
+    }
+}
+
+ResumeService() {
+    global Paused, CurrentConfig
+    if !Paused
+        return
+    Paused := false
+    ServiceLog("INFO", "service resuming — re-running startup scan")
+    StartupScan(CurrentConfig)
+}
+
+RecoverOrphanHiddenWindows() {
+    orphans := LoadHiddenJson()
+    if orphans.Length = 0
+        return
+    ServiceLog("INFO", "found " orphans.Length " orphan hidden windows from a prior run — restoring")
+    for entry in orphans {
+        RestoreWindowFromEntry(entry)
+    }
+    SaveHiddenJson()  ; persist the now-empty registry
+}
+
+OnServiceExit(*) {
+    ServiceLog("INFO", "service shutting down — restoring all hidden windows")
+    drained := RegistryDrain()
+    for entry in drained
+        RestoreWindowFromEntry(entry)
+    UnregisterWindowHook()
+    ReleaseServiceMutex()
+}
+
+; ---------------------------------------------------------------------------
 ; SetWinEventHook
 ; ---------------------------------------------------------------------------
 
 WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
-    global CurrentConfig, OBJID_WINDOW
+    global CurrentConfig, OBJID_WINDOW, Paused
 
+    if Paused
+        return
     if (idObject != OBJID_WINDOW || idChild != 0)
         return
     if (hwnd = 0)
@@ -164,8 +244,19 @@ UnregisterWindowHook() {
 ; Config watcher (mtime polling at 1 Hz — cost ~microseconds)
 ; ---------------------------------------------------------------------------
 
-; Compares old config's enabled-rule set against new and reconciles registry + windows.
 ApplyNewConfig(oldCfg, newCfg) {
+    global Paused
+
+    newWantsStopped := newCfg.Has("serviceState") && newCfg["serviceState"] = "stopped"
+    if newWantsStopped {
+        PauseService()
+        return
+    }
+    if Paused {
+        ResumeService()
+        return
+    }
+
     oldEnabled := Map(), newEnabled := Map()
     if oldCfg != "" {
         for rule in oldCfg["rules"]
@@ -176,7 +267,6 @@ ApplyNewConfig(oldCfg, newCfg) {
         if rule.Has("enabled") && rule["enabled"]
             newEnabled[rule["id"]] := true
 
-    ; Restore windows whose rule was disabled or removed.
     for ruleId in oldEnabled {
         if !newEnabled.Has(ruleId) {
             removed := RegistryRemoveByRuleId(ruleId)
@@ -187,11 +277,10 @@ ApplyNewConfig(oldCfg, newCfg) {
         }
     }
 
-    ; For newly-enabled rules, run a targeted scan to catch already-open windows.
     for ruleId in newEnabled {
         if !oldEnabled.Has(ruleId) {
             StartupScan(newCfg)
-            break  ; one scan covers all rules anyway
+            break
         }
     }
 }
