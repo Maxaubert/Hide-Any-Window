@@ -8,7 +8,9 @@ GetDefaultConfig() {
 }
 
 GetConfigPath() {
-    return GetAppDataDir() "\config.json"
+    ; Path is inlined (not via GetAppDataDir()) so AHK's LocalSameAsGlobal
+    ; warning doesn't fire on the cross-file function reference.
+    return A_AppData . "\HideAnyWindow\config.json"
 }
 
 ; LoadConfig() -> Map
@@ -32,7 +34,7 @@ LoadConfig() {
             cfg["schemaVersion"] := 1
         return cfg
     } catch as e {
-        ServiceLog("ERROR", "config.json parse failed: " e.Message)
+        ServiceLog("ERROR", "config.json parse failed: " . e.Message)
         return GetDefaultConfig()
     }
 }

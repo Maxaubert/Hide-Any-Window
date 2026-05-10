@@ -8,27 +8,13 @@ DetectHiddenWindows true
 #Include registry.ahk
 #Include hider.ahk
 
-; --- Bootstrap (Task 10: full lifecycle) ---
-AcquireServiceMutex()
-ServiceLog("INFO", "service starting (Task 10 build — full lifecycle)")
-RecoverOrphanHiddenWindows()  ; restore anything left hidden by a previous crashed run
-CurrentConfig := LoadConfig()
-LastConfigMTime := FileExist(GetConfigPath()) ? FileGetTime(GetConfigPath(), "M") : ""
-RegisterWindowHook()
-SetTimer(CheckConfigForChanges, 1000)
-if CurrentConfig.Has("serviceState") && CurrentConfig["serviceState"] = "stopped" {
-    Paused := true
-    ServiceLog("INFO", "service idle — paused per config")
-} else {
-    StartupScan(CurrentConfig)
-    ServiceLog("INFO", "service idle — " HiddenEntries.Length " windows hidden")
-}
-OnExit(OnServiceExit)
+; ==========================================================================
+; Constants and globals — MUST be assigned before the bootstrap below.
+; AHK v2 hoists function definitions but NOT script-level := assignments,
+; so anything the bootstrap reads has to be initialized first in source order.
+; ==========================================================================
 
-; ---------------------------------------------------------------------------
-; Win32 event constants and globals
-; ---------------------------------------------------------------------------
-
+; Win32 event constants
 EVENT_OBJECT_SHOW := 0x8002
 WINEVENT_OUTOFCONTEXT := 0x0000
 OBJID_WINDOW := 0
@@ -40,9 +26,29 @@ global LastConfigMTime := ""
 global hServiceMutex := 0
 global Paused := false
 
-; ---------------------------------------------------------------------------
+; ==========================================================================
+; Bootstrap
+; ==========================================================================
+
+AcquireServiceMutex()
+ServiceLog("INFO", "service starting (full lifecycle)")
+RecoverOrphanHiddenWindows()
+CurrentConfig := LoadConfig()
+LastConfigMTime := FileExist(GetConfigPath()) ? FileGetTime(GetConfigPath(), "M") : ""
+RegisterWindowHook()
+SetTimer(CheckConfigForChanges, 1000)
+if CurrentConfig.Has("serviceState") && CurrentConfig["serviceState"] = "stopped" {
+    Paused := true
+    ServiceLog("INFO", "service idle — paused per config")
+} else {
+    StartupScan(CurrentConfig)
+    ServiceLog("INFO", "service idle — " . HiddenEntries.Length . " windows hidden")
+}
+OnExit(OnServiceExit)
+
+; ==========================================================================
 ; Helpers
-; ---------------------------------------------------------------------------
+; ==========================================================================
 
 GetExeBasenameForHwnd(hwnd) {
     pid := 0
@@ -96,20 +102,20 @@ StartupScan(cfg) {
         rule := FindEnabledRuleForHwnd(cfg, hwnd)
         if (rule = "")
             continue
-        title := WinGetTitle("ahk_id " hwnd)
+        title := WinGetTitle("ahk_id " . hwnd)
         result := TryHideWindow(hwnd)
         if (result["ok"]) {
             RegistryAdd(hwnd, result["exStyle"], rule["id"], title)
-            ServiceLog("INFO", "hid hwnd=" hwnd " ruleId=" rule["id"] " title=" title)
+            ServiceLog("INFO", "hid hwnd=" . hwnd . " ruleId=" . rule["id"] . " title=" . title)
         } else {
-            ServiceLog("WARN", "hide failed hwnd=" hwnd " ruleId=" rule["id"] " reason=" result["reason"])
+            ServiceLog("WARN", "hide failed hwnd=" . hwnd . " ruleId=" . rule["id"] . " reason=" . result["reason"])
         }
     }
 }
 
-; ---------------------------------------------------------------------------
-; Named mutex (Task 9)
-; ---------------------------------------------------------------------------
+; ==========================================================================
+; Named mutex
+; ==========================================================================
 
 AcquireServiceMutex() {
     global hServiceMutex
@@ -132,9 +138,9 @@ ReleaseServiceMutex() {
     }
 }
 
-; ---------------------------------------------------------------------------
-; Pause/resume + crash recovery + shutdown (Task 10)
-; ---------------------------------------------------------------------------
+; ==========================================================================
+; Pause/resume + crash recovery + shutdown
+; ==========================================================================
 
 PauseService() {
     global Paused, CurrentConfig
@@ -161,7 +167,7 @@ RecoverOrphanHiddenWindows() {
     orphans := LoadHiddenJson()
     if orphans.Length = 0
         return
-    ServiceLog("INFO", "found " orphans.Length " orphan hidden windows from a prior run — restoring")
+    ServiceLog("INFO", "found " . orphans.Length . " orphan hidden windows from a prior run — restoring")
     for entry in orphans {
         RestoreWindowFromEntry(entry)
     }
@@ -177,9 +183,9 @@ OnServiceExit(*) {
     ReleaseServiceMutex()
 }
 
-; ---------------------------------------------------------------------------
+; ==========================================================================
 ; SetWinEventHook
-; ---------------------------------------------------------------------------
+; ==========================================================================
 
 WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
     global CurrentConfig, OBJID_WINDOW, Paused
@@ -202,13 +208,13 @@ WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
             return
     }
 
-    title := WinGetTitle("ahk_id " hwnd)
+    title := WinGetTitle("ahk_id " . hwnd)
     result := TryHideWindow(hwnd)
     if (result["ok"]) {
         RegistryAdd(hwnd, result["exStyle"], rule["id"], title)
-        ServiceLog("INFO", "hooked-hide hwnd=" hwnd " ruleId=" rule["id"] " title=" title)
+        ServiceLog("INFO", "hooked-hide hwnd=" . hwnd . " ruleId=" . rule["id"] . " title=" . title)
     } else {
-        ServiceLog("WARN", "hooked-hide failed hwnd=" hwnd " ruleId=" rule["id"] " reason=" result["reason"])
+        ServiceLog("WARN", "hooked-hide failed hwnd=" . hwnd . " ruleId=" . rule["id"] . " reason=" . result["reason"])
     }
 }
 
@@ -240,9 +246,9 @@ UnregisterWindowHook() {
     }
 }
 
-; ---------------------------------------------------------------------------
+; ==========================================================================
 ; Config watcher (mtime polling at 1 Hz — cost ~microseconds)
-; ---------------------------------------------------------------------------
+; ==========================================================================
 
 ApplyNewConfig(oldCfg, newCfg) {
     global Paused
@@ -257,7 +263,8 @@ ApplyNewConfig(oldCfg, newCfg) {
         return
     }
 
-    oldEnabled := Map(), newEnabled := Map()
+    oldEnabled := Map()
+    newEnabled := Map()
     if oldCfg != "" {
         for rule in oldCfg["rules"]
             if rule.Has("enabled") && rule["enabled"]
@@ -272,7 +279,7 @@ ApplyNewConfig(oldCfg, newCfg) {
             removed := RegistryRemoveByRuleId(ruleId)
             for entry in removed {
                 RestoreWindowFromEntry(entry)
-                ServiceLog("INFO", "restored hwnd=" entry["hwnd"] " ruleId=" ruleId " (rule disabled/removed)")
+                ServiceLog("INFO", "restored hwnd=" . entry["hwnd"] . " ruleId=" . ruleId . " (rule disabled/removed)")
             }
         }
     }

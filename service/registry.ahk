@@ -2,7 +2,9 @@
 global HiddenEntries := []
 
 GetHiddenJsonPath() {
-    return GetAppDataDir() "\hidden.json"
+    ; Path is inlined (not via GetAppDataDir()) so AHK's LocalSameAsGlobal
+    ; warning doesn't fire on the cross-file function reference.
+    return A_AppData . "\HideAnyWindow\hidden.json"
 }
 
 RegistryAdd(hwnd, exStyle, ruleId, title) {
@@ -51,7 +53,7 @@ RegistryDrain() {
 SaveHiddenJson() {
     global HiddenEntries
     path := GetHiddenJsonPath()
-    tmp := path ".tmp"
+    tmp := path . ".tmp"
     text := JSON.stringify(Map("entries", HiddenEntries))
     if FileExist(tmp)
         FileDelete(tmp)
@@ -71,7 +73,7 @@ LoadHiddenJson() {
         data := JSON.parse(text)
         return data.Has("entries") ? data["entries"] : []
     } catch as e {
-        ServiceLog("WARN", "hidden.json parse failed: " e.Message)
+        ServiceLog("WARN", "hidden.json parse failed: " . e.Message)
         return []
     }
 }
