@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using HideAnyWindowManager.Models;
 using HideAnyWindowManager.Services;
+using HideAnyWindowManager.Util;
+using HideAnyWindowManager.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -10,14 +13,26 @@ namespace HideAnyWindowManager;
 
 public sealed partial class AddPickerDialog : ContentDialog
 {
-    private readonly List<WindowedProcessInfo> _all;
+    private readonly List<PickerRow> _all;
+    private bool _doubleTapConfirmed;
     public WindowedProcessInfo? SelectedProcess { get; private set; }
 
     public AddPickerDialog(ProcessEnumerator enumerator, IReadOnlyCollection<string> alreadyMonitoredExes)
     {
         InitializeComponent();
-        _all = enumerator.EnumerateWindowedProcesses(alreadyMonitoredExes).ToList();
+        _all = enumerator.EnumerateWindowedProcesses(alreadyMonitoredExes)
+                         .Select(i => new PickerRow(i))
+                         .ToList();
         ApplyFilter("");
+        _ = LoadIconsAsync();
+    }
+
+    private async Task LoadIconsAsync()
+    {
+        foreach (var row in _all)
+        {
+            row.Icon = await IconHelper.LoadIconAsync(row.Source.FullPath);
+        }
     }
 
     private void ApplyFilter(string text)
@@ -35,7 +50,7 @@ public sealed partial class AddPickerDialog : ContentDialog
 
     private void PickList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        SelectedProcess = PickList.SelectedItem as WindowedProcessInfo;
+        SelectedProcess = (PickList.SelectedItem as PickerRow)?.Source;
         IsPrimaryButtonEnabled = SelectedProcess != null && !SelectedProcess.AlreadyMonitored;
     }
 
@@ -48,7 +63,6 @@ public sealed partial class AddPickerDialog : ContentDialog
         }
     }
 
-    private bool _doubleTapConfirmed;
-    /// <summary>True if user accepted via primary button OR double-tap.</summary>
-    public bool WasConfirmed(ContentDialogResult result) => result == ContentDialogResult.Primary || _doubleTapConfirmed;
+    public bool WasConfirmed(ContentDialogResult result)
+        => result == ContentDialogResult.Primary || _doubleTapConfirmed;
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,7 +40,7 @@ public sealed class ProcessEnumerator
                 byExe[exe] = new WindowedProcessInfo
                 {
                     Exe = exe,
-                    Name = string.IsNullOrEmpty(title) ? exe : title,
+                    Name = GetFriendlyName(fullPath, exe),
                     FullPath = fullPath,
                     AlreadyMonitored = monitoredSet.Contains(exe),
                 };
@@ -67,5 +68,18 @@ public sealed class ProcessEnumerator
         {
             Win32.CloseHandle(hProc);
         }
+    }
+
+    private static string GetFriendlyName(string fullPath, string fallback)
+    {
+        try
+        {
+            var info = FileVersionInfo.GetVersionInfo(fullPath);
+            var desc = info.FileDescription;
+            if (!string.IsNullOrWhiteSpace(desc))
+                return desc;
+        }
+        catch { /* falls through to fallback */ }
+        return fallback;
     }
 }

@@ -34,7 +34,7 @@
     <Compile Include="..\..\src\HideAnyWindowManager\Services\*.cs">
       <Link>Services\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\..\src\HideAnyWindowManager\Util\*.cs">
+    <Compile Include="..\..\src\HideAnyWindowManager\Util\*.cs" Exclude="..\..\src\HideAnyWindowManager\Util\IconHelper.cs">
       <Link>Util\%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
