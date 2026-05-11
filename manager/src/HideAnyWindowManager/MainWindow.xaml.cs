@@ -169,7 +169,7 @@ public sealed partial class MainWindow : Window
                 Exe = proc.Exe,
                 Path = proc.FullPath,
                 Name = proc.Name,
-                Enabled = true,
+                Enabled = false,
             });
             ViewModel.Rules.Add(newRvm);
             _ = LoadIconForRuleAsync(newRvm);
