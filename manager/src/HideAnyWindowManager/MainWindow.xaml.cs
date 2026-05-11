@@ -22,9 +22,28 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        TryRemoveWindowBorder();
         RulesList.ItemsSource = ViewModel.Rules;
         _ = LoadAsync();
         StartStatusWatch();
+    }
+
+    private void TryRemoveWindowBorder()
+    {
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            uint color = HideAnyWindowManager.Util.Win32.DWMWA_COLOR_NONE;
+            HideAnyWindowManager.Util.Win32.DwmSetWindowAttribute(
+                hwnd,
+                HideAnyWindowManager.Util.Win32.DWMWA_BORDER_COLOR,
+                ref color,
+                sizeof(uint));
+        }
+        catch
+        {
+            // DWMWA_BORDER_COLOR requires Windows 11; ignore silently on older versions.
+        }
     }
 
     private void StartStatusWatch()
