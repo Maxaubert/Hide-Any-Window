@@ -34,6 +34,8 @@ public sealed class ProcessEnumerator
 
             var (exe, fullPath) = GetProcessImage(pid);
             if (string.IsNullOrEmpty(exe)) return true;
+            if (string.Equals(exe, "hideanywindowmanager.exe", StringComparison.OrdinalIgnoreCase))
+                return true;  // never offer to hide ourselves
 
             if (!byExe.ContainsKey(exe))
             {

@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window
     public MainViewModel ViewModel { get; } = new();
 
     private Microsoft.UI.Xaml.DispatcherTimer? _statusTimer;
+    private HideAnyWindowManager.Util.WindowMinSize? _minSize;
 
     public MainWindow()
     {
@@ -23,9 +24,20 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         TryRemoveWindowBorder();
+        ApplyMinSize();
         RulesList.ItemsSource = ViewModel.Rules;
         _ = LoadAsync();
         StartStatusWatch();
+    }
+
+    private void ApplyMinSize()
+    {
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            _minSize = HideAnyWindowManager.Util.WindowMinSize.Apply(hwnd, 480, 420);
+        }
+        catch { /* non-fatal — window will simply be resizable to anything */ }
     }
 
     private void TryRemoveWindowBorder()

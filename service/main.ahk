@@ -84,6 +84,9 @@ FindEnabledRuleForHwnd(cfg, hwnd) {
     exe := GetExeBasenameForHwnd(hwnd)
     if (exe = "")
         return ""
+    ; Defensive denylist: never hide our own manager, even if a rule for it exists.
+    if (exe = "hideanywindowmanager.exe")
+        return ""
     for rule in cfg["rules"] {
         if (rule.Has("enabled") && rule["enabled"]
             && rule.Has("exe") && StrLower(rule["exe"]) = exe)
