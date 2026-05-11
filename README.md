@@ -1,178 +1,95 @@
-# Hide Any Window
+<div align="center">
+  <img src="dist/icon.png" alt="Hide Any Window" width="128">
 
-A Windows utility that fully hides any configured app's window — invisible on
-screen, removed from the taskbar, removed from Alt-Tab — automatically and in
-the background.
+  # Hide Any Window
 
-The motivating use case is hiding windows that resist normal "minimize to
-tray" tools, with **Windows Magnifier** as the canonical hard target.
+  Auto-hide any Windows app, even Magnifier. No taskbar icon. No Alt-Tab entry. No fuss.
 
-## Architecture
+  [![Latest release](https://img.shields.io/github/v/release/Maxaubert/Hide-Any-Window?style=flat-square)](https://github.com/Maxaubert/Hide-Any-Window/releases/latest)
+  [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square)](https://github.com/Maxaubert/Hide-Any-Window/releases/latest)
+</div>
 
-Two cooperating pieces, sharing a single JSON config file:
+---
 
-- **Service** (`service/`) — AutoHotkey v2 script that runs in the background.
-  Watches `%APPDATA%\HideAnyWindow\config.json` for changes, hooks
-  `EVENT_OBJECT_SHOW` so any matching new window is hidden the moment it
-  appears, and uses `ITaskbarList::DeleteTab` to drop the window's taskbar
-  button. **Implemented and validated.** See
-  `docs/superpowers/specs/2026-05-10-hide-any-window-phase-b-design.md` and
-  `docs/superpowers/plans/2026-05-10-hide-any-window-phase-b-service.md`.
+## What it does
 
-- **Manager** (`manager/`) — WinUI 3 / .NET 8 app that lets you add or remove
-  rules from a process picker, toggle each rule on/off, and stop or start
-  the service. Runs un-elevated; reads/writes the same `config.json` and
-  detects service liveness via the `HideAnyWindow_Service_Running` named
-  mutex. **Implemented.** See
-  `docs/superpowers/plans/2026-05-10-hide-any-window-phase-b-manager.md`.
+Pick an app. Toggle "hide" on. From then on, every time a window of that app appears it vanishes the moment it shows: gone from the screen, gone from the taskbar, gone from Alt-Tab. Toggle off and the window comes back.
 
-## Install (end users)
+Works on apps that resist normal "minimize to tray" tools, including Windows Magnifier.
 
-1. Download `HideAnyWindow-Setup.zip` from [Releases](#) (link to be filled in after first release).
-2. Extract anywhere.
-3. Right-click `HideAnyWindowSetup.ps1` → **Run with PowerShell**. Approve the UAC prompt.
-4. The installer:
-   - Trusts the bundled code-signing certificate (so the elevated service runs without further UAC prompts)
-   - Copies the manager + service to `C:\Program Files\HideAnyWindow\`
-   - Adds a Start Menu entry
-   - Optionally schedules the service to start at logon (you'll be asked)
-5. Open **Hide Any Window** from the Start Menu, click **Start service**, and use **+ Add** to pick apps to hide.
+## Install
 
-To uninstall: delete the install directory + the Task Scheduler entry (`schtasks /Delete /TN HideAnyWindowService /F`) + the Start Menu shortcut + the trusted cert (Manage Computer Certificates → Trusted Root → remove `HideAnyWindowDev`).
+1. Download `HideAnyWindow-Setup.exe` from the [latest release](https://github.com/Maxaubert/Hide-Any-Window/releases/latest).
+2. Double-click. Approve the UAC prompt.
+3. Done.
 
-## Requirements
+No .NET install, no AutoHotkey install, no other downloads. Everything is bundled.
+
+> SmartScreen may show a warning the first time. Click **More info**, then **Run anyway**. The installer is signed with a self-signed certificate and Windows has no reputation history yet, so it errs on the side of caution.
+
+## Use
+
+<div align="center">
+  <img src="docs/images/manager.png" alt="Manager window" width="520">
+</div>
+
+1. Open **Hide Any Window** from the Start menu.
+2. Click **Start service** in the footer.
+3. Click **+ Add**, pick the app you want to hide, click **Add**.
+4. Toggle the row on.
+
+Open the app and it disappears. Toggle off when you want it back.
+
+The picker lists every app with a visible window:
+
+<div align="center">
+  <img src="docs/images/picker.png" alt="Add picker" width="520">
+</div>
+
+## Settings
+
+The gear icon in the toolbar opens **Settings**. One option for now:
+
+- **Start at logon**: when on, the service auto-launches when you sign in to Windows. Off by default.
+
+## Uninstall
+
+Settings > Apps > Hide Any Window > Uninstall. Removes the manager, the service, the trusted certificate, and the optional logon task.
+
+## Build from source
+
+For developers.
+
+Requirements:
 
 - Windows 10 or 11
-- [AutoHotkey v2.0+](https://www.autohotkey.com/) — install includes
-  `AutoHotkey64_UIA.exe` which is the variant we use.
-
-## Running the service (development)
-
-The service must run with **UIAccess** privileges to hide UIAccess-elevated
-windows like Magnifier. AHK ships a UIAccess-signed variant in its install
-directory (typically `C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe`),
-so no UAC prompt and no compilation needed.
-
-From PowerShell:
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [AutoHotkey v2](https://www.autohotkey.com/) (only needed to build the service exe)
+- [Inno Setup 6](https://jrsoftware.org/isdl.php) (only needed to build the installer)
 
 ```powershell
-Start-Process "C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe" `
-  -ArgumentList '"C:\path\to\Hide-Any-Window\service\main.ahk"'
-```
-
-Or create a shortcut whose target is that command line and pin it to Start.
-The service is silent — it logs to `%APPDATA%\HideAnyWindow\service.log`.
-
-For the eventual standalone-binary distribution, the service will be compiled
-to a UIAccess-manifested `.exe` (`Ahk2Exe` + manifest + signing) so users
-don't need an AHK install. See the design doc.
-
-## Running the manager
-
-Build (one-time):
-
-```powershell
+git clone https://github.com/Maxaubert/Hide-Any-Window.git
+cd Hide-Any-Window
 dotnet build manager\HideAnyWindowManager.sln
 ```
 
-Then launch either via `dotnet run`:
+To produce the installer:
 
 ```powershell
-dotnet run --project manager\src\HideAnyWindowManager
+powershell -ExecutionPolicy Bypass -File dist\build.ps1
 ```
 
-…or directly from the build output:
+Output: `dist\HideAnyWindow-Setup.exe`.
 
-```
-manager\src\HideAnyWindowManager\bin\x64\Debug\net8.0-windows10.0.26100.0\HideAnyWindowManager.exe
-```
+## How it works
 
-The manager runs un-elevated. It reads/writes the shared `config.json` and
-detects whether the service is alive via the `HideAnyWindow_Service_Running`
-named mutex. When you click "Start service" from the footer, the manager
-launches the AHK service via `AutoHotkey64_UIA.exe` — no UAC prompt.
+Two pieces, one shared config file.
 
-## Configuration
+- **Service** (`service/`): a compiled AutoHotkey v2 script with a UIAccess manifest. Watches for windows of configured apps via `SetWinEventHook`, hides matches with `WinHide` plus `ITaskbarList::DeleteTab`. Holds a named mutex so the manager can detect liveness.
+- **Manager** (`manager/`): a WinUI 3 / .NET 8 desktop app. Reads and writes `%APPDATA%\HideAnyWindow\config.json`. Talks to the service through that file plus the named mutex.
 
-Configuration lives at `%APPDATA%\HideAnyWindow\config.json`. The **manager
-app** is the recommended way to edit it — see "Running the manager" above.
-Direct JSON editing still works for headless setups (the AHK service watches
-the file either way).
+Design notes and implementation plans live in `docs/superpowers/`.
 
-Schema:
+## License
 
-```json
-{
-  "schemaVersion": 1,
-  "serviceState": "running",
-  "rules": [
-    { "id": "magnify-exe", "exe": "magnify.exe", "name": "Magnifier", "enabled": true }
-  ]
-}
-```
-
-| Field | Notes |
-|---|---|
-| `serviceState` | `"running"` or `"stopped"` — flipping to `"stopped"` restores all hidden windows and pauses auto-hide. |
-| `rules[].exe` | Process executable basename, case-insensitive. |
-| `rules[].enabled` | `true` actively hides matches; `false` keeps the rule in place but doesn't act. |
-
-Edits are picked up within ~1s by the service's file watcher.
-
-## Validation results — Phase B service
-
-Tested on Windows 11 Pro 10.0.26200, AutoHotkey v2.x, service launched via
-`AutoHotkey64_UIA.exe`.
-
-| # | Scenario | Result |
-|---|---|---|
-| 1 | Service starts with no `config.json` | ✅ Logs "config.json missing — using defaults", idles |
-| 2 | Pre-existing Magnifier hides on rule add | ✅ Hidden within 1s of config write |
-| 3 | New Magnifier window hides on appearance (hook) | ✅ Multiple Magnifier reopens caught (`hooked-hide` log entries) |
-| 7 | Crash recovery from `hidden.json` | ✅ "found 1 orphan hidden windows from a prior run — restoring" |
-| 8 | Live config edit picked up by file watcher | ✅ "config.json changed — reapplying" |
-| 10 | Single-instance via named mutex | ✅ Validated when AHK auto-restarted on second launch |
-| — | Taskbar button removed (`ITaskbarList::DeleteTab`) | ✅ User-confirmed: window invisible AND taskbar entry gone |
-
-Tests 4 (toggle rule off → restore), 5 (`serviceState: stopped` → pause), 6
-(resume), and 9 (picker dedupe) require the manager UI or scripted config
-manipulation; deferred to Plan B-2 testing.
-
-## Files
-
-```
-service/
-  main.ahk         entry point: bootstrap, hook, watcher, mutex
-  log.ahk          ServiceLog helper
-  config.ahk       JSON config loader
-  registry.ahk     in-memory hidden-window registry + hidden.json I/O
-  hider.ahk        TryHideWindow / RestoreWindowFromEntry + ITaskbarList
-  lib/JSON.ahk     vendored thqby JSON library (MIT)
-  test/            ad-hoc test scripts for pure-logic modules
-manager/
-  HideAnyWindowManager.sln
-  src/HideAnyWindowManager/   WinUI 3 / .NET 8 manager app
-  test/                       xUnit tests (ConfigStore, ServiceController)
-docs/superpowers/
-  specs/           design docs
-  plans/           implementation plans
-```
-
-## Validation results — Phase B manager
-
-Tested on Windows 11 Pro, .NET 8 SDK, Windows App SDK 1.5+ (or 2.0).
-
-| # | Scenario | Result |
-|---|---|---|
-| 1 | Manager opens, shows existing rules from config.json | _pending_ |
-| 2 | Add Magnifier via picker → service hides | _pending_ |
-| 3 | Toggle off → service restores | _pending_ |
-| 4 | Toggle on → service re-hides | _pending_ |
-| 5 | Remove rule → service restores | _pending_ |
-| 6 | Stop service via footer | _pending_ |
-| 7 | Start service via footer (auto-launch when down) | _pending_ |
-| 8 | Manager close doesn't affect service | _pending_ |
-| 9 | Reopen manager reflects current state | _pending_ |
-| 10 | "already monitored" annotation in picker | _pending_ |
-
-(Replace `_pending_` with ✅ / ❌ as you run each test.)
+MIT (see [LICENSE](LICENSE) once added).
