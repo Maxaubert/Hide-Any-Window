@@ -68,7 +68,15 @@ public sealed partial class MainWindow : Window
     private void RuleToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (sender is ToggleSwitch ts && ts.DataContext is RuleViewModel rvm)
-            ManagerLog.Write($"toggle ruleId={rvm.Id} -> Enabled={rvm.Enabled}");
+        {
+            // WinUI 3's TwoWay binding may not have propagated the user's
+            // change to the source by the time Toggled fires, leaving rvm.Enabled
+            // one step behind ts.IsOn. Force the sync explicitly so SaveDebounced
+            // writes what the user actually sees.
+            var oldEnabled = rvm.Enabled;
+            rvm.Enabled = ts.IsOn;
+            ManagerLog.Write($"toggle ruleId={rvm.Id} ts.IsOn={ts.IsOn} oldEnabled={oldEnabled} -> Enabled={rvm.Enabled}");
+        }
         SaveDebounced();
     }
 
