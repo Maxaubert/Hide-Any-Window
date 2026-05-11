@@ -10,11 +10,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <StackPanel>
-            <TextBlock Text="Start service at logon" FontSize="14"/>
-            <TextBlock Text="Automatically launch the AHK service when you sign in to Windows."
-                       FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,2,0,0"/>
-        </StackPanel>
+        <TextBlock Text="Start service at logon" FontSize="14" VerticalAlignment="Center"/>
         <ToggleSwitch Grid.Column="1" x:Name="AutostartSwitch"
                       OnContent="" OffContent="" MinWidth="0"
                       Toggled="AutostartSwitch_Toggled"/>
