@@ -29,7 +29,9 @@
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <!-- Trimming disabled — ConfigStore uses reflection-based JSON which trim
+         analyzer flags (IL2026). Keeping types intact avoids runtime breakage.
+         Size impact at our scale is ~10–20 MB on top of ~125 MB total: worth it. -->
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 </Project>
