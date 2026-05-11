@@ -20,6 +20,8 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
         RulesList.ItemsSource = ViewModel.Rules;
         _ = LoadAsync();
         StartStatusWatch();

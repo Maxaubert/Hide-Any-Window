@@ -6,17 +6,23 @@
     xmlns:vm="using:HideAnyWindowManager.ViewModels"
     Title="Hide Any Window">
     <Window.SystemBackdrop>
-        <MicaBackdrop/>
+        <MicaBackdrop Kind="BaseAlt"/>
     </Window.SystemBackdrop>
     <Grid Padding="0">
         <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Custom title bar (drag region; Windows draws Min/Max/Close on top right) -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent" Padding="14,0,140,0">
+            <TextBlock Text="Hide Any Window" VerticalAlignment="Center" FontSize="12" Opacity="0.85"/>
+        </Grid>
+
         <!-- Toolbar -->
-        <Grid Padding="20,18,20,10" Grid.Row="0">
+        <Grid Padding="20,12,20,10" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -26,7 +32,7 @@
         </Grid>
 
         <!-- Rule list -->
-        <ListView x:Name="RulesList" Grid.Row="1" Padding="12,4,12,16" SelectionMode="Single"
+        <ListView x:Name="RulesList" Grid.Row="2" Padding="12,4,12,16" SelectionMode="Single"
                   SelectionChanged="RulesList_SelectionChanged">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vm:RuleViewModel">
@@ -57,7 +63,7 @@
         </ListView>
 
         <!-- Footer (service status + Stop/Start) -->
-        <Grid Grid.Row="2" Padding="20,12,20,14" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
+        <Grid Grid.Row="3" Padding="20,12,20,14" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
