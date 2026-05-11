@@ -26,3 +26,6 @@ manager/.vs/
 dist/staging/
 dist/HideAnyWindow-Setup.zip
 dist/.cert.pfx
+
+# Internal dev docs (specs/plans for the LLM agent workflow)
+docs/superpowers/

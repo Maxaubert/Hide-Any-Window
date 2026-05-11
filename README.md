@@ -85,8 +85,6 @@ Two pieces, one shared config file.
 - **Service** (`service/`): a compiled AutoHotkey v2 script with a UIAccess manifest. Watches for windows of configured apps via `SetWinEventHook`, hides matches with `WinHide` plus `ITaskbarList::DeleteTab`. Holds a named mutex so the manager can detect liveness.
 - **Manager** (`manager/`): a WinUI 3 / .NET 8 desktop app. Reads and writes `%APPDATA%\HideAnyWindow\config.json`. Talks to the service through that file plus the named mutex.
 
-Design notes and implementation plans live in `docs/superpowers/`.
-
 ## License
 
 MIT (see [LICENSE](LICENSE) once added).
