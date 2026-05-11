@@ -17,6 +17,7 @@ public sealed partial class MainWindow : Window
 
     private Microsoft.UI.Xaml.DispatcherTimer? _statusTimer;
     private HideAnyWindowManager.Util.WindowMinSize? _minSize;
+    private Windows.UI.ViewManagement.UISettings? _uiSettings;
 
     public MainWindow()
     {
@@ -30,6 +31,53 @@ public sealed partial class MainWindow : Window
         RulesList.ItemsSource = ViewModel.Rules;
         _ = LoadAsync();
         StartStatusWatch();
+        HookThemeChange();
+    }
+
+    private void HookThemeChange()
+    {
+        try
+        {
+            _uiSettings = new Windows.UI.ViewManagement.UISettings();
+            _uiSettings.ColorValuesChanged += (s, a) =>
+            {
+                DispatcherQueue.TryEnqueue(UpdateForCurrentTheme);
+            };
+            UpdateForCurrentTheme();
+        }
+        catch { /* best-effort; falls back to whatever theme XAML picked at load */ }
+    }
+
+    private void UpdateForCurrentTheme()
+    {
+        if (_uiSettings is null) return;
+        var bg = _uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Background);
+        // Background is near-white in light mode, near-black in dark mode.
+        bool isDark = (bg.R + bg.G + bg.B) < 384;
+
+        var theme = isDark ? ElementTheme.Dark : ElementTheme.Light;
+        if (RootGrid != null) RootGrid.RequestedTheme = theme;
+
+        try
+        {
+            var tb = AppWindow.TitleBar;
+            var fg = isDark ? Microsoft.UI.Colors.White : Microsoft.UI.Colors.Black;
+            var transparent = Microsoft.UI.Colors.Transparent;
+            var hoverBg = isDark ? Color.FromArgb(255, 60, 60, 60) : Color.FromArgb(255, 230, 230, 230);
+            var pressedBg = isDark ? Color.FromArgb(255, 80, 80, 80) : Color.FromArgb(255, 210, 210, 210);
+            var inactiveFg = Color.FromArgb(255, 130, 130, 130);
+
+            tb.ButtonForegroundColor = fg;
+            tb.ButtonHoverForegroundColor = fg;
+            tb.ButtonPressedForegroundColor = fg;
+            tb.ButtonInactiveForegroundColor = inactiveFg;
+
+            tb.ButtonBackgroundColor = transparent;
+            tb.ButtonInactiveBackgroundColor = transparent;
+            tb.ButtonHoverBackgroundColor = hoverBg;
+            tb.ButtonPressedBackgroundColor = pressedBg;
+        }
+        catch { /* TitleBar customization not available in some configurations */ }
     }
 
     private void ApplyMinSize()
