@@ -177,6 +177,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new SettingsDialog
+        {
+            XamlRoot = ((FrameworkElement)Content).XamlRoot,
+        };
+        await dlg.ShowAsync();
+    }
+
     private async void ServiceButton_Click(object sender, RoutedEventArgs e)
     {
         var cfg = await App.ConfigStore.LoadAsync();

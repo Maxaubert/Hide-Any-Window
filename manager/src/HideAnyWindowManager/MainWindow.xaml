@@ -23,9 +23,14 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="Monitored apps" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
-            <Button x:Name="AddButton" Grid.Column="1" Content="+ Add" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
+            <Button x:Name="SettingsButton" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="8"
+                    Margin="0,0,8,0" Click="SettingsButton_Click" ToolTipService.ToolTip="Settings">
+                <FontIcon Glyph="&#xE713;" FontSize="16"/>
+            </Button>
+            <Button x:Name="AddButton" Grid.Column="2" Content="+ Add" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
         </Grid>
 
         <!-- Rule list -->

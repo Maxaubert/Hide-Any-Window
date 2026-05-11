@@ -8,6 +8,7 @@ public partial class App : Application
     public static ConfigStore ConfigStore { get; } = new();
     public static ServiceController ServiceController { get; } = new();
     public static ProcessEnumerator ProcessEnumerator { get; } = new();
+    public static AutostartManager AutostartManager { get; } = new();
 
     private Window? _mainWindow;
 
