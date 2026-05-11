@@ -136,14 +136,22 @@ $managerExe = Join-Path $managerOut 'HideAnyWindowManager.exe'
 if (-not (Test-Path $managerExe)) { throw "Manager exe not produced at $managerExe" }
 Write-Host "       -> $managerOut ($([math]::Round((Get-ChildItem $managerOut -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB))MB)"
 
-# Stage the installer + cert alongside the binaries
-Copy-Item -Path (Join-Path $repoRoot 'dist\installer\*') -Destination $staging -Recurse
+Write-Host "[5/5] Building installer (Inno Setup)..."
+$iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+if (-not (Test-Path $iscc)) {
+    throw "ISCC.exe not found at $iscc - install Inno Setup 6 from https://jrsoftware.org/isdl.php"
+}
+$iss = Join-Path $repoRoot 'dist\installer\HideAnyWindowSetup.iss'
+& $iscc /Q $iss
+if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit $LASTEXITCODE" }
+$setupExe = Join-Path $repoRoot 'dist\HideAnyWindow-Setup.exe'
+if (-not (Test-Path $setupExe)) { throw "Setup exe not produced at $setupExe" }
+Write-Host "       -> $setupExe ($([math]::Round((Get-Item $setupExe).Length / 1MB))MB)"
 
-Write-Host "[5/5] Zipping..."
-$zipPath = Join-Path $repoRoot 'dist\HideAnyWindow-Setup.zip'
-if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-Compress-Archive -Path "$staging\*" -DestinationPath $zipPath
-Write-Host "       -> $zipPath ($([math]::Round((Get-Item $zipPath).Length / 1MB))MB)"
+# Sign the installer too so SmartScreen and signtool report it as ours.
+Write-Host "       Signing installer..."
+& $signtool sign /f $certPfx /p 'devpassword' /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $setupExe
+if ($LASTEXITCODE -ne 0) { Write-Warning "Installer sign failed (non-fatal); installer still works." }
 
 Write-Host ""
-Write-Host "Done. Distributable: $zipPath" -ForegroundColor Green
+Write-Host "Done. Distributable: $setupExe" -ForegroundColor Green
