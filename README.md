@@ -28,9 +28,12 @@ Works on apps that resist normal "minimize to tray" tools, including Windows Mag
 
 ## Use
 
-<div align="center">
-  <img src="docs/images/manager.png?v=2" alt="Manager window" width="520">
-</div>
+<table align="center">
+<tr>
+<td><img src="docs/images/manager.png?v=2" alt="Manager window" width="380"></td>
+<td><img src="docs/images/picker.png?v=2" alt="Add picker" width="380"></td>
+</tr>
+</table>
 
 1. Open **Hide Any Window** from the Start menu.
 2. Click **Start service** in the footer.
@@ -38,12 +41,6 @@ Works on apps that resist normal "minimize to tray" tools, including Windows Mag
 4. Toggle the row on.
 
 Open the app and it disappears. Toggle off when you want it back.
-
-The picker lists every app with a visible window:
-
-<div align="center">
-  <img src="docs/images/picker.png?v=2" alt="Add picker" width="520">
-</div>
 
 ## Settings
 
