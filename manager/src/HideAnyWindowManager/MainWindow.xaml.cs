@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        RootGrid.DataContext = ViewModel;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         TryRemoveWindowBorder();

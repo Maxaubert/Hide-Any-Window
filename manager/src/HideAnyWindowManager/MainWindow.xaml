@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:HideAnyWindowManager.ViewModels"
     Title="Hide Any Window">
-    <Grid Padding="0" Background="#FF202020" RequestedTheme="Dark">
+    <Grid x:Name="RootGrid" Padding="0" Background="#FF202020" RequestedTheme="Dark">
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
             <RowDefinition Height="Auto"/>
@@ -49,6 +49,7 @@
                         </Grid>
                         <TextBlock Grid.Column="1" Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
                         <ToggleSwitch Grid.Column="2" IsOn="{x:Bind Enabled, Mode=TwoWay}"
+                                      IsHitTestVisible="{Binding DataContext.IsServiceRunning, ElementName=RootGrid, Mode=OneWay}"
                                       OnContent="" OffContent="" MinWidth="0" Toggled="RuleToggle_Toggled"/>
                         <Button Grid.Column="3" Click="DeleteRowButton_Click" Padding="6,2" Background="Transparent" BorderThickness="0"
                                 ToolTipService.ToolTip="Remove">
