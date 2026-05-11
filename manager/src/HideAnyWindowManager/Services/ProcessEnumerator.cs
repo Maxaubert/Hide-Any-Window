@@ -36,6 +36,7 @@ public sealed class ProcessEnumerator
             if (string.IsNullOrEmpty(exe)) return true;
             if (string.Equals(exe, "hideanywindowmanager.exe", StringComparison.OrdinalIgnoreCase))
                 return true;  // never offer to hide ourselves
+            if (monitoredSet.Contains(exe)) return true;  // already in rules, hide from picker
 
             if (!byExe.ContainsKey(exe))
             {

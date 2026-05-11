@@ -24,7 +24,7 @@
             <TextBlock Grid.Column="1" x:Name="CountLabel" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
         </Grid>
 
-        <ListView Grid.Row="1" x:Name="PickList" Height="300" SelectionMode="Single"
+        <ListView Grid.Row="1" x:Name="PickList" MaxHeight="300" SelectionMode="Single"
                   SelectionChanged="PickList_SelectionChanged" DoubleTapped="PickList_DoubleTapped">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="vm:PickerRow">
