@@ -26,6 +26,7 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         TryRemoveWindowBorder();
         ApplyMinSize();
+        ResizeToDefault();
         RulesList.ItemsSource = ViewModel.Rules;
         _ = LoadAsync();
         StartStatusWatch();
@@ -39,6 +40,20 @@ public sealed partial class MainWindow : Window
             _minSize = HideAnyWindowManager.Util.WindowMinSize.Apply(hwnd, 480, 420);
         }
         catch { /* non-fatal — window will simply be resizable to anything */ }
+    }
+
+    private void ResizeToDefault()
+    {
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            uint dpi = HideAnyWindowManager.Util.Win32.GetDpiForWindow(hwnd);
+            if (dpi == 0) dpi = 96;
+            int w = (int)(480 * dpi / 96.0);
+            int h = (int)(420 * dpi / 96.0);
+            AppWindow.Resize(new Windows.Graphics.SizeInt32(w, h));
+        }
+        catch { /* non-fatal */ }
     }
 
     private void TryRemoveWindowBorder()
