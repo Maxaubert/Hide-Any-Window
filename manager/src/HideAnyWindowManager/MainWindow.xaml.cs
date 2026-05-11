@@ -51,7 +51,14 @@ public sealed partial class MainWindow : Window
             if (dpi == 0) dpi = 96;
             int w = (int)(480 * dpi / 96.0);
             int h = (int)(420 * dpi / 96.0);
-            AppWindow.Resize(new Windows.Graphics.SizeInt32(w, h));
+
+            var displayArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
+                AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary);
+            var work = displayArea.WorkArea;
+            int x = work.X + (work.Width - w) / 2;
+            int y = work.Y + (work.Height - h) / 2;
+
+            AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(x, y, w, h));
         }
         catch { /* non-fatal */ }
     }
