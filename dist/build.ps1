@@ -71,7 +71,7 @@ function Invoke-Ahk2Exe {
     }
 }
 
-Write-Host "[1/4] Compiling service via Ahk2Exe..."
+Write-Host "[1/5] Compiling service via Ahk2Exe..."
 $serviceScript = Join-Path $repoRoot 'service\main.ahk'
 $serviceExe    = Join-Path $staging 'service\HideAnyWindowService.exe'
 Invoke-Ahk2Exe -InScript $serviceScript -OutExe $serviceExe -BaseExe $ahkBaseUia
@@ -83,7 +83,7 @@ $certSubject = 'CN=HideAnyWindowDev'
 $certPwd     = ConvertTo-SecureString 'devpassword' -Force -AsPlainText
 
 if (-not (Test-Path $certPfx)) {
-    Write-Host "[2/4] No cert.pfx found - generating self-signed code-signing cert..."
+    Write-Host "[2/5] No cert.pfx found - generating self-signed code-signing cert..."
     # Ensure installer dir exists for the .cer export
     $installerDir = Join-Path $repoRoot 'dist\installer'
     if (-not (Test-Path $installerDir)) { New-Item -ItemType Directory -Path $installerDir | Out-Null }
@@ -101,10 +101,10 @@ if (-not (Test-Path $certPfx)) {
     Write-Host "       -> $certPfx (private key, gitignored)"
     Write-Host "       -> $certCer (public cert, committed)"
 } else {
-    Write-Host "[2/4] Reusing existing cert.pfx + .cer"
+    Write-Host "[2/5] Reusing existing cert.pfx + .cer"
 }
 
-Write-Host "[3/4] Signing service exe..."
+Write-Host "[3/5] Signing service exe..."
 $signtool = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' -ErrorAction SilentlyContinue |
              Sort-Object FullName -Descending | Select-Object -First 1).FullName
 if (-not $signtool) { throw "signtool.exe not found - install Windows 10 SDK (Smart Card / Code Signing tools component) from https://developer.microsoft.com/windows/downloads/windows-sdk/" }
@@ -127,4 +127,23 @@ for ($i = 0; $i -lt 8; $i++) { $peBytes[$secDirOff + $i] = 0 }
 if ($LASTEXITCODE -ne 0) { throw "signtool sign failed with exit $LASTEXITCODE" }
 Write-Host "       -> signed: $serviceExe"
 
-Write-Host "Done so far. Subsequent steps land in later tasks."
+Write-Host "[4/5] Publishing manager (self-contained)..."
+$managerCsproj = Join-Path $repoRoot 'manager\src\HideAnyWindowManager\HideAnyWindowManager.csproj'
+$managerOut    = Join-Path $staging 'manager'
+& dotnet publish $managerCsproj -c Release -r win-x64 -o $managerOut --nologo --verbosity minimal
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit $LASTEXITCODE" }
+$managerExe = Join-Path $managerOut 'HideAnyWindowManager.exe'
+if (-not (Test-Path $managerExe)) { throw "Manager exe not produced at $managerExe" }
+Write-Host "       -> $managerOut ($([math]::Round((Get-ChildItem $managerOut -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB))MB)"
+
+# Stage the installer + cert alongside the binaries
+Copy-Item -Path (Join-Path $repoRoot 'dist\installer\*') -Destination $staging -Recurse
+
+Write-Host "[5/5] Zipping..."
+$zipPath = Join-Path $repoRoot 'dist\HideAnyWindow-Setup.zip'
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+Compress-Archive -Path "$staging\*" -DestinationPath $zipPath
+Write-Host "       -> $zipPath ($([math]::Round((Get-Item $zipPath).Length / 1MB))MB)"
+
+Write-Host ""
+Write-Host "Done. Distributable: $zipPath" -ForegroundColor Green
