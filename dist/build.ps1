@@ -77,4 +77,54 @@ $serviceExe    = Join-Path $staging 'service\HideAnyWindowService.exe'
 Invoke-Ahk2Exe -InScript $serviceScript -OutExe $serviceExe -BaseExe $ahkBaseUia
 Write-Host "       -> $serviceExe ($([math]::Round((Get-Item $serviceExe).Length / 1KB))KB)"
 
+$certPfx     = Join-Path $repoRoot 'dist\.cert.pfx'
+$certCer     = Join-Path $repoRoot 'dist\installer\HideAnyWindow.cer'
+$certSubject = 'CN=HideAnyWindowDev'
+$certPwd     = ConvertTo-SecureString 'devpassword' -Force -AsPlainText
+
+if (-not (Test-Path $certPfx)) {
+    Write-Host "[2/4] No cert.pfx found - generating self-signed code-signing cert..."
+    # Ensure installer dir exists for the .cer export
+    $installerDir = Join-Path $repoRoot 'dist\installer'
+    if (-not (Test-Path $installerDir)) { New-Item -ItemType Directory -Path $installerDir | Out-Null }
+
+    $cert = New-SelfSignedCertificate `
+        -Type CodeSigning `
+        -Subject $certSubject `
+        -KeyUsage DigitalSignature `
+        -KeyAlgorithm RSA -KeyLength 2048 `
+        -CertStoreLocation 'Cert:\CurrentUser\My' `
+        -NotAfter (Get-Date).AddYears(5)
+    Export-PfxCertificate -Cert $cert -FilePath $certPfx -Password $certPwd | Out-Null
+    Export-Certificate -Cert $cert -FilePath $certCer | Out-Null
+    Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
+    Write-Host "       -> $certPfx (private key, gitignored)"
+    Write-Host "       -> $certCer (public cert, committed)"
+} else {
+    Write-Host "[2/4] Reusing existing cert.pfx + .cer"
+}
+
+Write-Host "[3/4] Signing service exe..."
+$signtool = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' -ErrorAction SilentlyContinue |
+             Sort-Object FullName -Descending | Select-Object -First 1).FullName
+if (-not $signtool) { throw "signtool.exe not found - install Windows 10 SDK (Smart Card / Code Signing tools component) from https://developer.microsoft.com/windows/downloads/windows-sdk/" }
+
+# Strip stale Certificate Table directory entry inherited from the AutoHotkey
+# base file. Ahk2Exe appends RCData script resources to the signed AHK base
+# without invalidating the IMAGE_DIRECTORY_ENTRY_SECURITY pointer, leaving a
+# dangling reference to garbage. signtool then refuses with 0x800700C1
+# "bad EXE format". Zeroing the entry restores a clean unsigned PE.
+$peBytes = [System.IO.File]::ReadAllBytes($serviceExe)
+$peOff = [BitConverter]::ToInt32($peBytes, 0x3C)
+$optHdrOff = $peOff + 24
+$magic = [BitConverter]::ToUInt16($peBytes, $optHdrOff)
+$dataDirOff = if ($magic -eq 0x20B) { $optHdrOff + 112 } else { $optHdrOff + 96 }  # PE32+ vs PE32
+$secDirOff = $dataDirOff + (4 * 8)  # IMAGE_DIRECTORY_ENTRY_SECURITY = index 4
+for ($i = 0; $i -lt 8; $i++) { $peBytes[$secDirOff + $i] = 0 }
+[System.IO.File]::WriteAllBytes($serviceExe, $peBytes)
+
+& $signtool sign /f $certPfx /p 'devpassword' /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $serviceExe
+if ($LASTEXITCODE -ne 0) { throw "signtool sign failed with exit $LASTEXITCODE" }
+Write-Host "       -> signed: $serviceExe"
+
 Write-Host "Done so far. Subsequent steps land in later tasks."
