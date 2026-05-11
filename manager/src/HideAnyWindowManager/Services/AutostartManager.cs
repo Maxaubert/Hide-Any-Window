@@ -41,7 +41,9 @@ public sealed class AutostartManager
             var ahkUia = ServiceController.DefaultAhkUiaPath();
             // schtasks /TR expects ONE argument: the full command line. Embed quotes around each path
             // so the spawned process sees quoted args.
-            var taskRun = $"\"{ahkUia}\" \"{script}\"";
+            var taskRun = string.IsNullOrEmpty(script)
+                ? $"\"{ahkUia}\""
+                : $"\"{ahkUia}\" \"{script}\"";
             var psi = new ProcessStartInfo
             {
                 FileName = "schtasks.exe",

@@ -26,6 +26,20 @@ Two cooperating pieces, sharing a single JSON config file:
   mutex. **Implemented.** See
   `docs/superpowers/plans/2026-05-10-hide-any-window-phase-b-manager.md`.
 
+## Install (end users)
+
+1. Download `HideAnyWindow-Setup.zip` from [Releases](#) (link to be filled in after first release).
+2. Extract anywhere.
+3. Right-click `HideAnyWindowSetup.ps1` → **Run with PowerShell**. Approve the UAC prompt.
+4. The installer:
+   - Trusts the bundled code-signing certificate (so the elevated service runs without further UAC prompts)
+   - Copies the manager + service to `C:\Program Files\HideAnyWindow\`
+   - Adds a Start Menu entry
+   - Optionally schedules the service to start at logon (you'll be asked)
+5. Open **Hide Any Window** from the Start Menu, click **Start service**, and use **+ Add** to pick apps to hide.
+
+To uninstall: delete the install directory + the Task Scheduler entry (`schtasks /Delete /TN HideAnyWindowService /F`) + the Start Menu shortcut + the trusted cert (Manage Computer Certificates → Trusted Root → remove `HideAnyWindowDev`).
+
 ## Requirements
 
 - Windows 10 or 11

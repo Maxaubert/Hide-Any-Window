@@ -21,3 +21,8 @@ manager/.vs/
 
 # Local git worktrees
 .worktrees/
+
+# Distribution build artifacts
+dist/staging/
+dist/HideAnyWindow-Setup.zip
+dist/.cert.pfx

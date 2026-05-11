@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
         RootGrid.DataContext = ViewModel;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        TrySetWindowIcon();
         TryRemoveWindowBorder();
         ApplyMinSize();
         ResizeToDefault();
@@ -32,6 +33,19 @@ public sealed partial class MainWindow : Window
         _ = LoadAsync();
         StartStatusWatch();
         HookThemeChange();
+    }
+
+    private void TrySetWindowIcon()
+    {
+        try
+        {
+            // Look for AppIcon.ico next to the executable (works for both
+            // dev and self-contained publish layouts).
+            var iconPath = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+            if (System.IO.File.Exists(iconPath))
+                AppWindow.SetIcon(iconPath);
+        }
+        catch { /* non-fatal */ }
     }
 
     private void HookThemeChange()
