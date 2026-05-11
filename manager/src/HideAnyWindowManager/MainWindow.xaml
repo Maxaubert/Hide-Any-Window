@@ -19,10 +19,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="Monitored apps" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button x:Name="AddButton" Content="+ Add" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
-                <Button x:Name="RemoveButton" Content="Remove" Click="RemoveButton_Click" IsEnabled="False"/>
-            </StackPanel>
+            <Button x:Name="AddButton" Grid.Column="1" Content="+ Add" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
         </Grid>
 
         <!-- Rule list -->
@@ -35,14 +32,22 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Border Width="28" Height="28" CornerRadius="6" Background="#4F7CFF">
-                            <TextBlock Text="{x:Bind Initial}" Foreground="White" HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        </Border>
+                        <Grid Width="28" Height="28">
+                            <Border CornerRadius="6" Background="#4F7CFF" Visibility="{x:Bind PlaceholderVisibility, Mode=OneWay}">
+                                <TextBlock Text="{x:Bind Initial}" Foreground="White" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            </Border>
+                            <Image Source="{x:Bind Icon, Mode=OneWay}" Visibility="{x:Bind IconVisibility, Mode=OneWay}"/>
+                        </Grid>
                         <TextBlock Grid.Column="1" Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
                         <ToggleSwitch Grid.Column="2" IsOn="{x:Bind Enabled, Mode=TwoWay}"
                                       OnContent="" OffContent="" Toggled="RuleToggle_Toggled"/>
+                        <Button Grid.Column="3" Click="DeleteRowButton_Click" Padding="6,2" Background="Transparent" BorderThickness="0"
+                                ToolTipService.ToolTip="Remove">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                        </Button>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

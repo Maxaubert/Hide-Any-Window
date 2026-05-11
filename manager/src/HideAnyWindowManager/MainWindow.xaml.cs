@@ -57,12 +57,19 @@ public sealed partial class MainWindow : Window
     {
         var cfg = await App.ConfigStore.LoadAsync();
         ViewModel.LoadFrom(cfg);
+        foreach (var rvm in ViewModel.Rules)
+            _ = LoadIconForRuleAsync(rvm);
+    }
+
+    private async System.Threading.Tasks.Task LoadIconForRuleAsync(RuleViewModel rvm)
+    {
+        if (string.IsNullOrEmpty(rvm.Path)) return;
+        rvm.Icon = await IconHelper.LoadIconAsync(rvm.Path);
     }
 
     private void RulesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         ViewModel.SelectedRule = RulesList.SelectedItem as RuleViewModel;
-        RemoveButton.IsEnabled = ViewModel.CanRemove;
     }
 
     private void RuleToggle_Toggled(object sender, RoutedEventArgs e)
@@ -80,13 +87,14 @@ public sealed partial class MainWindow : Window
         SaveDebounced();
     }
 
-    private void RemoveButton_Click(object sender, RoutedEventArgs e)
+    private void DeleteRowButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.SelectedRule is null) return;
-        ViewModel.Rules.Remove(ViewModel.SelectedRule);
-        ViewModel.SelectedRule = null;
-        RemoveButton.IsEnabled = false;
-        SaveDebounced();
+        if (sender is Button b && b.DataContext is RuleViewModel rvm)
+        {
+            ViewModel.Rules.Remove(rvm);
+            ManagerLog.Write($"removed rule ruleId={rvm.Id}");
+            SaveDebounced();
+        }
     }
 
     private async void AddButton_Click(object sender, RoutedEventArgs e)
@@ -99,13 +107,16 @@ public sealed partial class MainWindow : Window
         var result = await dialog.ShowAsync();
         if (dialog.WasConfirmed(result) && dialog.SelectedProcess is { } proc)
         {
-            ViewModel.Rules.Add(new RuleViewModel(new Rule
+            var newRvm = new RuleViewModel(new Rule
             {
                 Id = Rule.IdFromExe(proc.Exe),
                 Exe = proc.Exe,
+                Path = proc.FullPath,
                 Name = proc.Name,
                 Enabled = true,
-            }));
+            });
+            ViewModel.Rules.Add(newRvm);
+            _ = LoadIconForRuleAsync(newRvm);
             SaveDebounced();
         }
     }

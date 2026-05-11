@@ -4,6 +4,7 @@ public sealed class Rule
 {
     public string Id { get; set; } = "";
     public string Exe { get; set; } = "";
+    public string Path { get; set; } = "";
     public string Name { get; set; } = "";
     public bool Enabled { get; set; } = true;
 
