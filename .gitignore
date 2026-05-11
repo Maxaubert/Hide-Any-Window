@@ -30,3 +30,4 @@ dist/.cert.pfx
 # Internal dev docs (specs/plans for the LLM agent workflow)
 docs/superpowers/
 .mockups/
+docs/images/

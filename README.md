@@ -28,10 +28,6 @@ Works on apps that resist normal "minimize to tray" tools, including Windows Mag
 
 ## Use
 
-<div align="center">
-  <img src="docs/images/manager.png?v=2" alt="Manager window" width="480">
-</div>
-
 1. Open **Hide Any Window** from the Start menu.
 2. Click **Start service** in the footer.
 3. Click **+ Add**, pick the app you want to hide, click **Add**.
