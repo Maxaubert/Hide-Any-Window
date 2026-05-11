@@ -28,12 +28,9 @@ Works on apps that resist normal "minimize to tray" tools, including Windows Mag
 
 ## Use
 
-<table align="center">
-<tr>
-<td><img src="docs/images/manager.png?v=2" alt="Manager window" width="380"></td>
-<td><img src="docs/images/picker.png?v=2" alt="Add picker" width="380"></td>
-</tr>
-</table>
+<div align="center">
+  <img src="docs/images/manager.png?v=2" alt="Manager window" width="480">
+</div>
 
 1. Open **Hide Any Window** from the Start menu.
 2. Click **Start service** in the footer.
