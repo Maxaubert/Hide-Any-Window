@@ -20,12 +20,11 @@ Works on apps that resist normal "minimize to tray" tools, including Windows Mag
 ## Install
 
 1. Download `HideAnyWindow-Setup.exe` from the [latest release](https://github.com/Maxaubert/Hide-Any-Window/releases/latest).
-2. Double-click. Approve the UAC prompt.
-3. Done.
+2. Done.
 
 No .NET install, no AutoHotkey install, no other downloads. Everything is bundled.
 
-> SmartScreen may show a warning the first time. Click **More info**, then **Run anyway**. The installer is signed with a self-signed certificate and Windows has no reputation history yet, so it errs on the side of caution.
+> You may need to unblock the installer the first time. It is not signed by a trusted publisher, so SmartScreen and some antivirus tools flag it as unknown. Right-click the file > Properties > tick **Unblock** at the bottom, or click **More info** > **Run anyway** when SmartScreen appears.
 
 ## Use
 
