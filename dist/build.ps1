@@ -136,6 +136,27 @@ $managerExe = Join-Path $managerOut 'HideAnyWindowManager.exe'
 if (-not (Test-Path $managerExe)) { throw "Manager exe not produced at $managerExe" }
 Write-Host "       -> $managerOut ($([math]::Round((Get-ChildItem $managerOut -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB))MB)"
 
+# WinAppSDK 2.0 unpackaged-publish drops the compiled XAML (.xbf) and app
+# resource index (HideAnyWindowManager.pri) on the floor — they live in
+# bin\Release but never get copied to the publish output. Without them the
+# manager exe loads but crashes on the first XAML page (0xc000027b in
+# Microsoft.UI.Xaml.dll). Copy them ourselves.
+$binRel = Join-Path $repoRoot 'manager\src\HideAnyWindowManager\bin\Release\net8.0-windows10.0.26100.0\win-x64'
+if (Test-Path $binRel) {
+    $copied = 0
+    Get-ChildItem $binRel -Filter '*.xbf' -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $managerOut -Force
+        $copied++
+    }
+    Get-ChildItem $binRel -Filter 'HideAnyWindowManager.pri' -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $managerOut -Force
+        $copied++
+    }
+    Write-Host "       Restored $copied XAML/PRI artifacts from bin\Release"
+} else {
+    Write-Warning "bin\Release win-x64 dir not found at $binRel - XAML may be missing from publish"
+}
+
 Write-Host "[5/5] Building installer (Inno Setup)..."
 $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 if (-not (Test-Path $iscc)) {
