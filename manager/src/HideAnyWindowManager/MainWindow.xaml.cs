@@ -207,6 +207,7 @@ public sealed partial class MainWindow : Window
         var dialog = new AddPickerDialog(App.ProcessEnumerator, existingExes)
         {
             XamlRoot = ((FrameworkElement)Content).XamlRoot,
+            RequestedTheme = RootGrid.RequestedTheme,
         };
         var result = await dialog.ShowAsync();
         if (dialog.WasConfirmed(result) && dialog.SelectedProcess is { } proc)
@@ -230,6 +231,7 @@ public sealed partial class MainWindow : Window
         var dlg = new SettingsDialog
         {
             XamlRoot = ((FrameworkElement)Content).XamlRoot,
+            RequestedTheme = RootGrid.RequestedTheme,
         };
         await dlg.ShowAsync();
     }
@@ -256,6 +258,7 @@ public sealed partial class MainWindow : Window
                     Content = $"One of these wasn't found:\n\n  AHK UIA exe:  {ahkUia}\n  Service script:  {script}\n\nVerify both paths exist.",
                     CloseButtonText = "OK",
                     XamlRoot = ((FrameworkElement)Content).XamlRoot,
+                    RequestedTheme = RootGrid.RequestedTheme,
                 };
                 await dlg.ShowAsync();
             }
