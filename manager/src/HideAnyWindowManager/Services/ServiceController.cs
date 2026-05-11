@@ -36,13 +36,13 @@ public sealed class ServiceController
         scriptPath ??= DefaultScriptPath();
         ahkUiaPath ??= DefaultAhkUiaPath();
 
-        bool scriptOk = File.Exists(scriptPath);
         bool ahkOk = File.Exists(ahkUiaPath);
-        Log($"TryStartService probed: ahkUia={ahkUiaPath} (exists={ahkOk})  script={scriptPath} (exists={scriptOk})");
+        bool scriptOk = string.IsNullOrEmpty(scriptPath) || File.Exists(scriptPath);
+        Log($"TryStartService probed: ahk={ahkUiaPath} (exists={ahkOk})  script={scriptPath} (skip-if-empty, exists={scriptOk})");
 
-        if (!scriptOk || !ahkOk)
+        if (!ahkOk || !scriptOk)
         {
-            Log("TryStartService aborting — one or both paths missing");
+            Log("TryStartService aborting — required path missing");
             return false;
         }
 
@@ -51,8 +51,8 @@ public sealed class ServiceController
             var psi = new ProcessStartInfo
             {
                 FileName = ahkUiaPath,
-                Arguments = "\"" + scriptPath + "\"",
-                UseShellExecute = true,   // required for UIAccess auto-elevation of AutoHotkey64_UIA.exe
+                Arguments = string.IsNullOrEmpty(scriptPath) ? "" : "\"" + scriptPath + "\"",
+                UseShellExecute = true,
             };
             var proc = Process.Start(psi);
             Log($"TryStartService Process.Start returned proc={proc?.Id.ToString() ?? "null"}");
@@ -78,22 +78,30 @@ public sealed class ServiceController
     }
 
     public static string DefaultAhkUiaPath()
-        => @"C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe";
+    {
+        // Production: HideAnyWindowService.exe sits next to the manager exe.
+        var sibling = System.IO.Path.Combine(System.AppContext.BaseDirectory, "HideAnyWindowService.exe");
+        if (System.IO.File.Exists(sibling))
+            return sibling;
+        // Dev fallback: AutoHotkey64_UIA.exe from a system AHK install.
+        return @"C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe";
+    }
 
     public static string DefaultScriptPath()
     {
-        // Walk up from BaseDirectory looking for a "service\main.ahk" sibling.
-        // Works for any build config (Debug/Release/publish) and for deployed
-        // layouts where service/ sits next to the manager binary.
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        // Production: HideAnyWindowService.exe takes no script argument (script embedded).
+        var sibling = System.IO.Path.Combine(System.AppContext.BaseDirectory, "HideAnyWindowService.exe");
+        if (System.IO.File.Exists(sibling))
+            return "";   // signal: no script argument needed
+        // Dev fallback: walk up to find service\main.ahk.
+        var dir = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
         while (dir != null)
         {
-            var probe = Path.Combine(dir.FullName, "service", "main.ahk");
-            if (File.Exists(probe))
+            var probe = System.IO.Path.Combine(dir.FullName, "service", "main.ahk");
+            if (System.IO.File.Exists(probe))
                 return probe;
             dir = dir.Parent;
         }
-        // Fallback: return the closest-best guess so error message is informative.
-        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\service\main.ahk"));
+        return System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\service\main.ahk"));
     }
 }
