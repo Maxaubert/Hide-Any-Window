@@ -5,6 +5,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:HideAnyWindowManager.ViewModels"
     Title="Hide Any Window">
+    <Window.SystemBackdrop>
+        <MicaBackdrop/>
+    </Window.SystemBackdrop>
     <Grid Padding="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -43,7 +46,7 @@
                         </Grid>
                         <TextBlock Grid.Column="1" Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
                         <ToggleSwitch Grid.Column="2" IsOn="{x:Bind Enabled, Mode=TwoWay}"
-                                      OnContent="" OffContent="" Toggled="RuleToggle_Toggled"/>
+                                      OnContent="" OffContent="" MinWidth="0" Toggled="RuleToggle_Toggled"/>
                         <Button Grid.Column="3" Click="DeleteRowButton_Click" Padding="6,2" Background="Transparent" BorderThickness="0"
                                 ToolTipService.ToolTip="Remove">
                             <FontIcon Glyph="&#xE74D;" FontSize="14"/>
