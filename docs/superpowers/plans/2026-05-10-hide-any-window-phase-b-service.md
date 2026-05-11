@@ -238,7 +238,7 @@ LoadConfig() {
     }
     try {
         text := FileRead(path, "UTF-8")
-        cfg := JSON.parse(text, , false)   ; non-strict, returns Map
+        cfg := JSON.parse(text)   ; non-strict, returns Map
         if !cfg.Has("rules") || !(cfg["rules"] is Array) {
             ServiceLog("WARN", "config.json missing 'rules' array — using defaults")
             return GetDefaultConfig()
@@ -255,7 +255,7 @@ LoadConfig() {
 }
 ```
 
-Note: `JSON.parse(text, , false)` returns AHK Maps and Arrays (not objects). The third argument is `keep_type` — false makes it return Maps for objects, which is what we want.
+Note: `JSON.parse(text)` returns AHK Maps for objects and Arrays for arrays by default (the lib's `as_map` parameter defaults to `true`).
 
 - [ ] **Step 2: Write the test script**
 
@@ -411,7 +411,7 @@ LoadHiddenJson() {
         return []
     try {
         text := FileRead(path, "UTF-8")
-        data := JSON.parse(text, , false)
+        data := JSON.parse(text)
         return data.Has("entries") ? data["entries"] : []
     } catch as e {
         ServiceLog("WARN", "hidden.json parse failed: " e.Message)
