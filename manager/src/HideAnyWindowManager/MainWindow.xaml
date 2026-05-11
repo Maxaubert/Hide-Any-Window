@@ -5,7 +5,25 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:HideAnyWindowManager.ViewModels"
     Title="Hide Any Window">
-    <Grid x:Name="RootGrid" Padding="0" Background="#FF202020" RequestedTheme="Dark">
+    <Grid x:Name="RootGrid" Padding="0" Background="{ThemeResource WindowBackground}">
+        <Grid.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.ThemeDictionaries>
+                    <ResourceDictionary x:Key="Default">
+                        <SolidColorBrush x:Key="WindowBackground" Color="#FFF3F3F3"/>
+                        <SolidColorBrush x:Key="FooterBackground" Color="#FFE9E9E9"/>
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="Light">
+                        <SolidColorBrush x:Key="WindowBackground" Color="#FFF3F3F3"/>
+                        <SolidColorBrush x:Key="FooterBackground" Color="#FFE9E9E9"/>
+                    </ResourceDictionary>
+                    <ResourceDictionary x:Key="Dark">
+                        <SolidColorBrush x:Key="WindowBackground" Color="#FF202020"/>
+                        <SolidColorBrush x:Key="FooterBackground" Color="#FF2B2B2B"/>
+                    </ResourceDictionary>
+                </ResourceDictionary.ThemeDictionaries>
+            </ResourceDictionary>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
             <RowDefinition Height="Auto"/>
@@ -66,7 +84,7 @@
         </ListView>
 
         <!-- Footer (service status + Stop/Start) -->
-        <Grid Grid.Row="3" Padding="20,12,20,14" Background="#FF2B2B2B">
+        <Grid Grid.Row="3" Padding="20,12,20,14" Background="{ThemeResource FooterBackground}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
