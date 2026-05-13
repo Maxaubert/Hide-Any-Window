@@ -53,7 +53,11 @@ Filename: "certutil.exe"; Parameters: "-addstore TrustedPublisher ""{app}\HideAn
     StatusMsg: "Adding to Trusted Publishers..."; Flags: runhidden waituntilterminated
 
 ; 2. (Optional) create at-logon scheduled task — only if the user ticked the box.
-Filename: "schtasks.exe"; Parameters: "/Create /TN ""HideAnyWindowService"" /SC ONLOGON /RL HIGHEST /TR ""\""{app}\{#MyServiceExe}\"""" /F"; \
+; Target the manager (requireAdministrator, no uiAccess) with --start-service rather
+; than the service exe directly: Task Scheduler launches actions via CreateProcess,
+; which refuses uiAccess binaries with ERROR_ELEVATION_REQUIRED (740). The manager
+; can launch normally and then ShellExecutes the uiAccess service (silent auto-elevation).
+Filename: "schtasks.exe"; Parameters: "/Create /TN ""HideAnyWindowService"" /SC ONLOGON /RL HIGHEST /TR ""\""{app}\{#MyAppExeName}\"" --start-service"" /F"; \
     StatusMsg: "Creating logon task..."; Flags: runhidden waituntilterminated; Tasks: autostart
 
 ; 3. Optional: offer to launch the manager when install finishes.

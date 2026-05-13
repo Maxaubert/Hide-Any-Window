@@ -5,6 +5,7 @@ namespace HideAnyWindowManager.Services;
 public sealed class AutostartManager
 {
     private const string TaskName = "HideAnyWindowService";
+    public const string StartServiceArg = "--start-service";
 
     /// <summary>True if a Task Scheduler at-logon task for the service exists.</summary>
     public bool IsEnabled()
@@ -30,20 +31,21 @@ public sealed class AutostartManager
         catch { return false; }
     }
 
-    /// <summary>Creates an at-logon task that launches AutoHotkey64_UIA.exe with the service script.
-    /// Runs with highest privileges (no UAC prompt at logon for the elevated AHK service). Overwrites
-    /// any existing task with the same name.</summary>
+    /// <summary>Creates an at-logon task that launches the manager with --start-service.
+    /// The manager (requireAdministrator, no uiAccess) launches cleanly via CreateProcess
+    /// with the user's elevated token; it then ShellExecutes the uiAccess service exe,
+    /// which AppInfo silently auto-elevates. Pointing the task directly at the uiAccess
+    /// service exe fails with ERROR_ELEVATION_REQUIRED (740) because CreateProcess cannot
+    /// launch uiAccess binaries — only ShellExecute can. Overwrites any existing task.</summary>
     public bool TryEnable()
     {
         try
         {
-            var script = ServiceController.DefaultScriptPath();
-            var ahkUia = ServiceController.DefaultAhkUiaPath();
-            // schtasks /TR expects ONE argument: the full command line. Embed quotes around each path
-            // so the spawned process sees quoted args.
-            var taskRun = string.IsNullOrEmpty(script)
-                ? $"\"{ahkUia}\""
-                : $"\"{ahkUia}\" \"{script}\"";
+            var managerExe = ManagerExePath();
+            if (string.IsNullOrEmpty(managerExe)) return false;
+            // schtasks /TR expects ONE argument: the full command line. Quote the path so
+            // the spawned process sees it as a single arg.
+            var taskRun = $"\"{managerExe}\" {StartServiceArg}";
             var psi = new ProcessStartInfo
             {
                 FileName = "schtasks.exe",
@@ -68,6 +70,12 @@ public sealed class AutostartManager
             return proc.ExitCode == 0;
         }
         catch { return false; }
+    }
+
+    private static string ManagerExePath()
+    {
+        try { return Process.GetCurrentProcess().MainModule?.FileName ?? ""; }
+        catch { return ""; }
     }
 
     /// <summary>Removes the at-logon task. Idempotent (returns true if already absent).</summary>
