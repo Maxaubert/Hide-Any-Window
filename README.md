@@ -11,6 +11,14 @@
 
 ---
 
+<div align="center">
+  <img src="docs/screenshots/Main.png" alt="" width="640">
+  <br><br>
+  <img src="docs/screenshots/StartStopService.png" alt="" width="640">
+  <br><br>
+  <img src="docs/screenshots/AddProcess.png" alt="" width="640">
+</div>
+
 ## What it does
 
 Pick an app. Toggle "hide" on. From then on, every time a window of that app appears it vanishes the moment it shows: gone from the screen, gone from the taskbar, gone from Alt-Tab. Toggle off and the window comes back.
