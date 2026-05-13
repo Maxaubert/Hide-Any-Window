@@ -17,7 +17,7 @@
     <td align="center"><img src="docs/screenshots/AddProcess.png" alt="" width="420"></td>
   </tr>
   <tr>
-    <td align="center" colspan="2"><img src="docs/screenshots/StartStopService.png" alt="" width="600"></td>
+    <td align="center" colspan="2"><img src="docs/screenshots/StartStopService.png" alt="" width="420"></td>
   </tr>
 </table>
 
