@@ -2,7 +2,7 @@
 ; Compiled by dist\build.ps1 (calls ISCC.exe)
 
 #define MyAppName     "Hide Any Window"
-#define MyAppVersion  "0.1.0"
+#define MyAppVersion  "0.2.0"
 #define MyAppPublisher "HideAnyWindowDev"
 #define MyAppExeName  "HideAnyWindowManager.exe"
 #define MyServiceExe  "HideAnyWindowService.exe"

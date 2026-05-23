@@ -14,7 +14,13 @@ public sealed class MainViewModel : ObservableObject
     public bool IsServiceRunning
     {
         get => _isServiceRunning;
-        set { SetField(ref _isServiceRunning, value); Raise(nameof(StatusText)); Raise(nameof(ServiceButtonText)); }
+        set
+        {
+            SetField(ref _isServiceRunning, value);
+            Raise(nameof(StatusText));
+            Raise(nameof(ServiceButtonText));
+            foreach (var r in Rules) r.ServiceRunning = value;
+        }
     }
 
     public RuleViewModel? SelectedRule
@@ -33,7 +39,8 @@ public sealed class MainViewModel : ObservableObject
     {
         ServiceState = cfg.ServiceState;
         Rules.Clear();
-        foreach (var r in cfg.Rules) Rules.Add(new RuleViewModel(r));
+        foreach (var r in cfg.Rules)
+            Rules.Add(new RuleViewModel(r) { ServiceRunning = _isServiceRunning });
     }
 
     public Config ToConfig()

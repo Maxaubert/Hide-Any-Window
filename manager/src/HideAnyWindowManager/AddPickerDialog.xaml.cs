@@ -25,6 +25,8 @@ public sealed partial class AddPickerDialog : ContentDialog
                          .ToList();
         ApplyFilter("");
         _ = LoadIconsAsync();
+        // Search-first dialog: put the caret in the box as soon as it opens.
+        Opened += (_, __) => SearchBox.Focus(FocusState.Programmatic);
     }
 
     private async Task LoadIconsAsync()
@@ -51,12 +53,12 @@ public sealed partial class AddPickerDialog : ContentDialog
     private void PickList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         SelectedProcess = (PickList.SelectedItem as PickerRow)?.Source;
-        IsPrimaryButtonEnabled = SelectedProcess != null && !SelectedProcess.AlreadyMonitored;
+        IsPrimaryButtonEnabled = SelectedProcess != null;
     }
 
     private void PickList_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        if (SelectedProcess != null && !SelectedProcess.AlreadyMonitored)
+        if (SelectedProcess != null)
         {
             _doubleTapConfirmed = true;
             Hide();

@@ -20,8 +20,11 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="SearchBox" PlaceholderText="Search visible windows..." TextChanged="SearchBox_TextChanged"/>
-            <TextBlock Grid.Column="1" x:Name="CountLabel" VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+            <TextBox x:Name="SearchBox" PlaceholderText="Search visible windows..." TextChanged="SearchBox_TextChanged"
+                     AutomationProperties.Name="Search visible windows"/>
+            <TextBlock Grid.Column="1" x:Name="CountLabel" VerticalAlignment="Center" FontSize="11"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       AutomationProperties.LiveSetting="Polite"/>
         </Grid>
 
         <ListView Grid.Row="1" x:Name="PickList" MaxHeight="300" SelectionMode="Single"
@@ -33,13 +36,10 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Image Width="26" Height="26" Source="{x:Bind Icon, Mode=OneWay}"/>
+                        <Image Width="26" Height="26" Source="{x:Bind Icon, Mode=OneWay}" AutomationProperties.AccessibilityView="Raw"/>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="{x:Bind Name}" FontSize="13" FontWeight="SemiBold"/>
-                            <TextBlock FontSize="11" Foreground="Gray">
-                                <Run Text="{x:Bind Exe}"/>
-                                <Run Text="{x:Bind AlreadyMonitoredAnnotation}"/>
-                            </TextBlock>
+                            <TextBlock Text="{x:Bind Exe}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

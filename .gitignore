@@ -31,3 +31,7 @@ dist/.cert.pfx
 docs/superpowers/
 .mockups/
 docs/images/
+
+# Claude Code: commit shared config (settings.json, skills/, agents/, CLAUDE.md),
+# but keep each developer's local permission/setting overrides out of git
+.claude/settings.local.json

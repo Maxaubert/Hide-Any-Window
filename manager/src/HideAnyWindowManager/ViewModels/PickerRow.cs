@@ -11,8 +11,6 @@ public sealed class PickerRow : ObservableObject
     public WindowedProcessInfo Source { get; }
     public string Name => Source.Name;
     public string Exe => Source.Exe;
-    public bool AlreadyMonitored => Source.AlreadyMonitored;
-    public string AlreadyMonitoredAnnotation => Source.AlreadyMonitoredAnnotation;
 
     public BitmapImage? Icon
     {

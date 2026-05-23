@@ -10,9 +10,11 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="Start service at logon" FontSize="14" VerticalAlignment="Center"/>
+        <TextBlock x:Name="AutostartLabel" Text="Start service at logon" FontSize="14" VerticalAlignment="Center"/>
         <ToggleSwitch Grid.Column="1" x:Name="AutostartSwitch"
                       OnContent="" OffContent="" MinWidth="0"
+                      AutomationProperties.Name="Start service at logon"
+                      AutomationProperties.LabeledBy="{Binding ElementName=AutostartLabel}"
                       Toggled="AutostartSwitch_Toggled"/>
     </Grid>
 </ContentDialog>

@@ -27,7 +27,8 @@
             </Grid.ColumnDefinitions>
             <TextBlock Text="Monitored apps" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
             <Button x:Name="SettingsButton" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="8"
-                    Margin="0,0,8,0" Click="SettingsButton_Click" ToolTipService.ToolTip="Settings">
+                    Margin="0,0,8,0" Click="SettingsButton_Click" ToolTipService.ToolTip="Settings"
+                    AutomationProperties.Name="Settings">
                 <FontIcon Glyph="&#xE713;" FontSize="16"/>
             </Button>
             <Button x:Name="AddButton" Grid.Column="2" Content="+ Add" Style="{StaticResource AccentButtonStyle}" Click="AddButton_Click"/>
@@ -53,17 +54,25 @@
                             <Image Source="{x:Bind Icon, Mode=OneWay}" Visibility="{x:Bind IconVisibility, Mode=OneWay}"/>
                         </Grid>
                         <TextBlock Grid.Column="1" Text="{x:Bind Name}" VerticalAlignment="Center" FontSize="14"/>
-                        <ToggleSwitch Grid.Column="2" IsOn="{x:Bind Enabled, Mode=TwoWay}"
-                                      IsEnabled="{Binding DataContext.IsServiceRunning, ElementName=RootGrid, Mode=OneWay}"
+                        <ToggleSwitch Grid.Column="2" IsOn="{x:Bind Enabled, Mode=OneWay}"
+                                      IsEnabled="{x:Bind ServiceRunning, Mode=OneWay}"
+                                      AutomationProperties.Name="{x:Bind ToggleAutomationName}"
                                       OnContent="" OffContent="" MinWidth="0" Toggled="RuleToggle_Toggled"/>
                         <Button Grid.Column="3" Click="DeleteRowButton_Click" Padding="6,2" Background="Transparent" BorderThickness="0"
-                                ToolTipService.ToolTip="Remove">
+                                AutomationProperties.Name="{x:Bind RemoveAutomationName}" ToolTipService.ToolTip="Remove">
                             <FontIcon Glyph="&#xE74D;" FontSize="14"/>
                         </Button>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+
+        <!-- Empty state (shown when there are no rules; toggled from code-behind) -->
+        <TextBlock x:Name="EmptyState" Grid.Row="2" Visibility="Collapsed"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" MaxWidth="280"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   Text="No apps yet. Click &#x201C;+ Add&#x201D; to choose one to hide."/>
 
         <!-- Footer (service status + Stop/Start) -->
         <Grid Grid.Row="3" Padding="20,12,20,14" Background="{ThemeResource FooterBackground}">

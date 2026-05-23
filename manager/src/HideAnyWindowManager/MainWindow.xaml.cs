@@ -30,9 +30,23 @@ public sealed partial class MainWindow : Window
         ApplyMinSize();
         ResizeToDefault();
         RulesList.ItemsSource = ViewModel.Rules;
+        ViewModel.Rules.CollectionChanged += (_, __) => UpdateEmptyState();
+        UpdateEmptyState();
         _ = LoadAsync();
         StartStatusWatch();
         HookThemeChange();
+        Closed += OnClosed;
+    }
+
+    private void UpdateEmptyState()
+        => EmptyState.Visibility = ViewModel.Rules.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    private void OnClosed(object sender, WindowEventArgs args)
+    {
+        _statusTimer?.Stop();
+        // Guarantee a debounced save still inside its 200ms window is written before exit.
+        try { App.ConfigStore.FlushPendingAsync().GetAwaiter().GetResult(); }
+        catch { /* best effort on shutdown */ }
     }
 
     private void TrySetWindowIcon()
@@ -154,14 +168,15 @@ public sealed partial class MainWindow : Window
         RefreshStatus();
     }
 
-    private async void RefreshStatus()
+    private void RefreshStatus()
     {
+        // Only the mutex needs polling: the service never writes config.json, so the
+        // in-memory ServiceState (set at load and by the Start/Stop button) is the source
+        // of truth. Re-reading the file every second risked a read/write race and crashed
+        // an async-void method on a transient file lock.
         bool mutex = App.ServiceController.IsServiceRunning();
-        var cfg = await App.ConfigStore.LoadAsync();
-        bool effective = mutex && cfg.ServiceState == "running";
+        bool effective = mutex && ViewModel.ServiceState == "running";
 
-        // Keep VM in sync with disk so SaveDebounced preserves external changes.
-        ViewModel.ServiceState = cfg.ServiceState;
         ViewModel.IsServiceRunning = effective;
 
         StatusDot.Fill = new SolidColorBrush(effective
@@ -192,17 +207,15 @@ public sealed partial class MainWindow : Window
 
     private void RuleToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleSwitch ts && ts.DataContext is RuleViewModel rvm)
+        // IsOn is bound OneWay (display only), so this handler is the single writer of
+        // Enabled. The guard ignores the Toggled that fires when the binding itself pushes
+        // a programmatic value, avoiding a redundant save / feedback loop.
+        if (sender is ToggleSwitch ts && ts.DataContext is RuleViewModel rvm && rvm.Enabled != ts.IsOn)
         {
-            // WinUI 3's TwoWay binding may not have propagated the user's
-            // change to the source by the time Toggled fires, leaving rvm.Enabled
-            // one step behind ts.IsOn. Force the sync explicitly so SaveDebounced
-            // writes what the user actually sees.
-            var oldEnabled = rvm.Enabled;
             rvm.Enabled = ts.IsOn;
-            ManagerLog.Write($"toggle ruleId={rvm.Id} ts.IsOn={ts.IsOn} oldEnabled={oldEnabled} -> Enabled={rvm.Enabled}");
+            ManagerLog.Write($"toggle ruleId={rvm.Id} -> Enabled={rvm.Enabled}");
+            SaveDebounced();
         }
-        SaveDebounced();
     }
 
     private void DeleteRowButton_Click(object sender, RoutedEventArgs e)
@@ -233,7 +246,8 @@ public sealed partial class MainWindow : Window
                 Path = proc.FullPath,
                 Name = proc.Name,
                 Enabled = false,
-            });
+            })
+            { ServiceRunning = ViewModel.IsServiceRunning };
             ViewModel.Rules.Add(newRvm);
             _ = LoadIconForRuleAsync(newRvm);
             SaveDebounced();

@@ -8,6 +8,7 @@ namespace HideAnyWindowManager.ViewModels;
 public sealed class RuleViewModel : ObservableObject
 {
     private bool _enabled;
+    private bool _serviceRunning;
     private BitmapImage? _icon;
 
     public string Id { get; }
@@ -19,6 +20,14 @@ public sealed class RuleViewModel : ObservableObject
     {
         get => _enabled;
         set => SetField(ref _enabled, value);
+    }
+
+    /// <summary>Mirrors MainViewModel.IsServiceRunning so the row toggle can bind its
+    /// IsEnabled with a compile-checked x:Bind instead of a fragile cross-element Binding.</summary>
+    public bool ServiceRunning
+    {
+        get => _serviceRunning;
+        set => SetField(ref _serviceRunning, value);
     }
 
     public BitmapImage? Icon
@@ -37,6 +46,10 @@ public sealed class RuleViewModel : ObservableObject
 
     /// <summary>First letter of Name, used for the placeholder square icon.</summary>
     public string Initial => string.IsNullOrEmpty(Name) ? "?" : Name.Substring(0, 1).ToUpperInvariant();
+
+    /// <summary>Accessible names for the icon-only controls in the row template.</summary>
+    public string ToggleAutomationName => $"Hide {Name}";
+    public string RemoveAutomationName => $"Remove {Name}";
 
     public RuleViewModel(Rule r)
     {

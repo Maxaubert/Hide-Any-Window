@@ -2,19 +2,28 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using HideAnyWindowManager.Util;
 
 namespace HideAnyWindowManager.Services;
 
 public sealed class ServiceController
 {
-    private const string MutexName = "HideAnyWindow_Service_Running";
+    /// <summary>The named mutex the running service holds. Shared IPC contract with the
+    /// AHK service — must stay in sync with the name used in service/main.ahk.</summary>
+    public const string DefaultMutexName = "HideAnyWindow_Service_Running";
+
+    private readonly string _mutexName;
+
+    /// <param name="mutexName">Override the mutex name (used by tests for isolation);
+    /// defaults to the production <see cref="DefaultMutexName"/>.</param>
+    public ServiceController(string? mutexName = null) => _mutexName = mutexName ?? DefaultMutexName;
 
     /// <summary>Returns true if the AHK service process is currently holding its named mutex.</summary>
     public bool IsServiceRunning()
     {
         try
         {
-            using var existing = Mutex.OpenExisting(MutexName);
+            using var existing = Mutex.OpenExisting(_mutexName);
             return true;
         }
         catch (WaitHandleCannotBeOpenedException)
@@ -38,11 +47,11 @@ public sealed class ServiceController
 
         bool ahkOk = File.Exists(ahkUiaPath);
         bool scriptOk = string.IsNullOrEmpty(scriptPath) || File.Exists(scriptPath);
-        Log($"TryStartService probed: ahk={ahkUiaPath} (exists={ahkOk})  script={scriptPath} (skip-if-empty, exists={scriptOk})");
+        ManagerLog.Write($"TryStartService probed: ahk={ahkUiaPath} (exists={ahkOk})  script={scriptPath} (skip-if-empty, exists={scriptOk})");
 
         if (!ahkOk || !scriptOk)
         {
-            Log("TryStartService aborting — required path missing");
+            ManagerLog.Write("TryStartService aborting — required path missing");
             return false;
         }
 
@@ -55,26 +64,14 @@ public sealed class ServiceController
                 UseShellExecute = true,
             };
             var proc = Process.Start(psi);
-            Log($"TryStartService Process.Start returned proc={proc?.Id.ToString() ?? "null"}");
+            ManagerLog.Write($"TryStartService Process.Start returned proc={proc?.Id.ToString() ?? "null"}");
             return proc != null;
         }
         catch (Exception ex)
         {
-            Log($"TryStartService Process.Start threw: {ex.GetType().Name}: {ex.Message}");
+            ManagerLog.Write($"TryStartService Process.Start threw: {ex.GetType().Name}: {ex.Message}");
             return false;
         }
-    }
-
-    private static void Log(string msg)
-    {
-        try
-        {
-            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HideAnyWindow");
-            Directory.CreateDirectory(dir);
-            var line = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " | " + msg + "\r\n";
-            File.AppendAllText(Path.Combine(dir, "manager.log"), line);
-        }
-        catch { /* swallow logging errors */ }
     }
 
     public static string DefaultAhkUiaPath()
