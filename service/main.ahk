@@ -2,6 +2,11 @@
 #SingleInstance Force
 DetectHiddenWindows true
 
+; No tray icon. AutoHotkey's default tray menu ("Suspend Hotkeys" / "Pause Script" / "Exit")
+; implies this service owns global hotkeys and can be halted from the tray. It owns none,
+; and its lifecycle belongs to the manager. The manager GUI is the only control surface.
+#NoTrayIcon
+
 ; AHK v2's static analyzer emits "this local variable appears to never be
 ; assigned a value" warnings for legitimate cross-file function and class
 ; references (e.g. calling ServiceLog from config.ahk, or JSON.stringify
@@ -31,7 +36,6 @@ global EventCallbackPtr := 0
 global CurrentConfig := ""
 global LastConfigMTime := ""
 global hServiceMutex := 0
-global Paused := false
 
 ; ==========================================================================
 ; Bootstrap
@@ -41,21 +45,30 @@ AcquireServiceMutex()
 ServiceLog("INFO", "service starting (full lifecycle)")
 RecoverOrphanHiddenWindows()
 CurrentConfig := LoadConfig()
+
+; "stopped" means the user pressed Stop. The service does not idle in a paused state —
+; it must not exist at all, so nothing lingers in Task Manager. Bail out before the hook
+; is registered. OnExit is not installed yet, so release the mutex by hand.
+if IsStoppedConfig(CurrentConfig) {
+    ServiceLog("INFO", "serviceState=stopped at startup — exiting without hiding anything")
+    ReleaseServiceMutex()
+    ExitApp 0
+}
+
 LastConfigMTime := FileExist(GetConfigPath()) ? FileGetTime(GetConfigPath(), "M") : ""
 RegisterWindowHook()
 SetTimer(CheckConfigForChanges, 1000)
-if CurrentConfig.Has("serviceState") && CurrentConfig["serviceState"] = "stopped" {
-    Paused := true
-    ServiceLog("INFO", "service idle — paused per config")
-} else {
-    StartupScan(CurrentConfig)
-    ServiceLog("INFO", "service idle — " . HiddenEntries.Length . " windows hidden")
-}
+StartupScan(CurrentConfig)
+ServiceLog("INFO", "service idle — " . HiddenEntries.Length . " windows hidden")
 OnExit(OnServiceExit)
 
 ; ==========================================================================
 ; Helpers
 ; ==========================================================================
+
+IsStoppedConfig(cfg) {
+    return cfg != "" && cfg.Has("serviceState") && StrLower(cfg["serviceState"]) = "stopped"
+}
 
 GetExeBasenameForHwnd(hwnd) {
     pid := 0
@@ -150,29 +163,8 @@ ReleaseServiceMutex() {
 }
 
 ; ==========================================================================
-; Pause/resume + crash recovery + shutdown
+; Crash recovery + shutdown
 ; ==========================================================================
-
-PauseService() {
-    global Paused, CurrentConfig
-    if Paused
-        return
-    Paused := true
-    ServiceLog("INFO", "service pausing — restoring all hidden windows")
-    drained := RegistryDrain()
-    for entry in drained {
-        RestoreWindowFromEntry(entry)
-    }
-}
-
-ResumeService() {
-    global Paused, CurrentConfig
-    if !Paused
-        return
-    Paused := false
-    ServiceLog("INFO", "service resuming — re-running startup scan")
-    StartupScan(CurrentConfig)
-}
 
 RecoverOrphanHiddenWindows() {
     orphans := LoadHiddenJson()
@@ -203,10 +195,8 @@ OnServiceExit(*) {
 ; ==========================================================================
 
 WinEventCallback(hHook, event, hwnd, idObject, idChild, thread, time) {
-    global CurrentConfig, OBJID_WINDOW, Paused
+    global CurrentConfig, OBJID_WINDOW
 
-    if Paused
-        return
     if (idObject != OBJID_WINDOW || idChild != 0)
         return
     if (hwnd = 0)
@@ -267,16 +257,11 @@ UnregisterWindowHook() {
 ; ==========================================================================
 
 ApplyNewConfig(oldCfg, newCfg) {
-    global Paused
-
-    newWantsStopped := newCfg.Has("serviceState") && newCfg["serviceState"] = "stopped"
-    if newWantsStopped {
-        PauseService()
-        return
-    }
-    if Paused {
-        ResumeService()
-        return
+    ; The manager signals "stop" by writing serviceState=stopped. Exit outright rather than
+    ; idling paused; OnServiceExit restores every hidden window and releases the mutex.
+    if IsStoppedConfig(newCfg) {
+        ServiceLog("INFO", "serviceState=stopped — exiting")
+        ExitApp 0
     }
 
     oldEnabled := Map()

@@ -79,6 +79,16 @@ self-signed cert, signs, publishes the manager, runs Inno Setup):
 
 - The service refuses to hide `hideanywindowmanager.exe` (hard-coded denylist in `main.ahk`).
 
+- IMPORTANT: `serviceState: "stopped"` means the service process **must not exist** — it is not a
+  paused state. The manager's Stop button only writes `stopped` to config.json; the service sees
+  it on its next 1 Hz poll, restores every hidden window, releases the mutex and `ExitApp`s. The
+  service also exits immediately if it starts up while `stopped`, and the `--start-service` logon
+  path skips the launch entirely (`ServiceController.ShouldStartAtLogon`). Do not reintroduce a
+  resident paused mode — a service idling in Task Manager after "Stop" is what issue #1 was.
+
+- The service sets `#NoTrayIcon`. AutoHotkey's default tray menu ("Suspend Hotkeys" / "Pause
+  Script") falsely implies the service owns global hotkeys. It registers **no hotkeys at all**.
+
 ## State & log files (all under `%APPDATA%\HideAnyWindow\`)
 
 - `config.json` — camelCase JSON (`schemaVersion` / `serviceState` / `rules`), written

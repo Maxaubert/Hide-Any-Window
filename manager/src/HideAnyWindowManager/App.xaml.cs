@@ -1,6 +1,7 @@
 using System;
 using Microsoft.UI.Xaml;
 using HideAnyWindowManager.Services;
+using HideAnyWindowManager.Util;
 
 namespace HideAnyWindowManager;
 
@@ -23,7 +24,13 @@ public partial class App : Application
             if (string.Equals(cli[i], AutostartManager.StartServiceArg, StringComparison.OrdinalIgnoreCase))
             {
                 // Logon-trigger path: ShellExecute the uiAccess service and exit without UI.
-                ServiceController.TryStartService();
+                // Skip the launch entirely if the user last pressed Stop — otherwise every
+                // logon resurrects a service they explicitly stopped.
+                var cfg = ConfigStore.LoadAsync().GetAwaiter().GetResult();
+                if (ServiceController.ShouldStartAtLogon(cfg))
+                    ServiceController.TryStartService();
+                else
+                    ManagerLog.Write("--start-service: serviceState=stopped, not launching");
                 Environment.Exit(0);
                 return;
             }

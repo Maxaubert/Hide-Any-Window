@@ -1,10 +1,31 @@
 using System;
 using System.Threading;
+using HideAnyWindowManager.Models;
 using HideAnyWindowManager.Services;
 using Xunit;
 
 public class ServiceControllerTests
 {
+    [Theory]
+    [InlineData("stopped", false)]
+    [InlineData("STOPPED", false)]   // state comparison must be case-insensitive
+    [InlineData("running", true)]
+    [InlineData("", true)]           // unknown/absent state -> start (fail open)
+    [InlineData("bogus", true)]
+    public void ShouldStartAtLogon_HonoursServiceState(string state, bool expected)
+    {
+        var cfg = new Config { ServiceState = state };
+        Assert.Equal(expected, ServiceController.ShouldStartAtLogon(cfg));
+    }
+
+    [Fact]
+    public void ShouldStartAtLogon_NullConfigStarts()
+    {
+        // A missing/unreadable config must not silently disable autostart.
+        Assert.True(ServiceController.ShouldStartAtLogon(null));
+    }
+
+
     [Fact]
     public void DetectsHeldMutex()
     {
