@@ -12,7 +12,7 @@ restores them on demand. Entry point: `service\main.ahk`.
 
 | File | Role |
 |---|---|
-| `main.ahk` | Bootstrap, liveness mutex, `SetWinEventHook` + callback, startup scan, 1 Hz config-mtime watcher, pause/resume, orphan recovery, shutdown restore. |
+| `main.ahk` | Bootstrap, liveness mutex, `SetWinEventHook` + callback, startup scan, 1 Hz config-mtime watcher, exit-on-`serviceState=stopped`, orphan recovery, shutdown restore. |
 | `hider.ahk` | `TryHideWindow` / `RestoreWindowFromEntry`; lazy `ITaskbarList` COM; taskbar tab add/remove; ex-style toggling. |
 | `config.ahk` | `GetDefaultConfig`, `GetConfigPath`, `LoadConfig` (parse + validate + default fallback). |
 | `registry.ahk` | In-memory `HiddenEntries` + `hidden.json` persistence (add / remove / drain / load). |

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using HideAnyWindowManager.Models;
 using HideAnyWindowManager.Util;
 
 namespace HideAnyWindowManager.Services;
@@ -36,6 +37,13 @@ public sealed class ServiceController
             return true;
         }
     }
+
+    /// <summary>Whether the at-logon task should launch the service. "stopped" means the user
+    /// pressed Stop, which now terminates the process — relaunching it at logon would resurrect
+    /// a service they explicitly stopped. Any other value (including a missing or unreadable
+    /// config) starts, so a config problem never silently disables hiding.</summary>
+    public static bool ShouldStartAtLogon(Config? cfg)
+        => !string.Equals(cfg?.ServiceState, "stopped", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Launches the AHK service via AutoHotkey64_UIA.exe. The UIA-signed AHK
     /// auto-elevates without a UAC prompt and gives the script UIAccess privileges.</summary>

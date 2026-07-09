@@ -291,21 +291,15 @@ public sealed partial class MainWindow : Window
                 await dlg.ShowAsync();
             }
         }
-        else if (cfg.ServiceState == "running")
+        else
         {
-            // Process running, currently active -> pause.
+            // Process running -> ask it to shut down. The service polls config.json at ~1Hz;
+            // on seeing "stopped" it restores every hidden window, releases the mutex and
+            // exits, so it leaves no resident process behind.
             cfg.ServiceState = "stopped";
             ViewModel.ServiceState = "stopped";
             await App.ConfigStore.SaveImmediateAsync(cfg);
-            ManagerLog.Write("ServiceButton: pausing (mutex held, state was running -> stopped)");
-        }
-        else
-        {
-            // Process running, paused -> resume.
-            cfg.ServiceState = "running";
-            ViewModel.ServiceState = "running";
-            await App.ConfigStore.SaveImmediateAsync(cfg);
-            ManagerLog.Write("ServiceButton: resuming (mutex held, state was stopped -> running)");
+            ManagerLog.Write("ServiceButton: stopping (mutex held, state -> stopped; service will exit)");
         }
         RefreshStatus();
     }
